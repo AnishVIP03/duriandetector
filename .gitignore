@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+venv/
+env/
+.venv/
+
+# Django
+db.sqlite3
+*.log
+media/
+staticfiles/
+geoip_data/
+
+# Environment
+.env
+*.env.local
+
+# Node
+node_modules/
+frontend/dist/
+frontend/build/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ML models
+*.pkl
+*.joblib
+ml_models/
+
+# Reports
+reports/*.pdf
+.claude/

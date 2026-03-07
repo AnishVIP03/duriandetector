@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "django-backend",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["backend/manage.py", "runserver", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "react-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "frontend"],
+      "port": 5173
+    }
+  ]
+}

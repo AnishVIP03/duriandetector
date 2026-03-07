@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* SOC Dark Theme Base */
+@layer base {
+  body {
+    @apply bg-soc-bg text-soc-text;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Custom scrollbar for SOC aesthetic */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-soc-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-soc-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-soc-muted;
+  }
+}
+
+@layer components {
+  /* Reusable card component */
+  .soc-card {
+    @apply bg-soc-card border border-soc-border rounded-xl p-6 shadow-lg;
+  }
+
+  /* Glowing border effect */
+  .soc-glow {
+    @apply border border-soc-accent/30 shadow-[0_0_15px_rgba(59,130,246,0.15)];
+  }
+
+  /* Status indicator dot */
+  .status-dot {
+    @apply w-2 h-2 rounded-full inline-block;
+  }
+
+  .status-dot-active {
+    @apply bg-soc-success animate-pulse;
+  }
+
+  .status-dot-warning {
+    @apply bg-soc-warning animate-pulse;
+  }
+
+  .status-dot-danger {
+    @apply bg-soc-danger animate-pulse;
+  }
+
+  /* Severity badges */
+  .badge-low {
+    @apply bg-blue-500/20 text-blue-400 border border-blue-500/30;
+  }
+
+  .badge-medium {
+    @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+  }
+
+  .badge-high {
+    @apply bg-orange-500/20 text-orange-400 border border-orange-500/30;
+  }
+
+  .badge-critical {
+    @apply bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+
+  /* Input styles */
+  .soc-input {
+    @apply w-full bg-soc-surface border border-soc-border rounded-lg px-4 py-3
+           text-soc-text placeholder-soc-muted
+           focus:outline-none focus:ring-2 focus:ring-soc-accent/50 focus:border-soc-accent
+           transition-all duration-200;
+  }
+
+  /* Button styles */
+  .soc-btn {
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-soc-bg;
+  }
+
+  .soc-btn-primary {
+    @apply soc-btn bg-soc-accent hover:bg-blue-600 text-white focus:ring-soc-accent;
+  }
+
+  .soc-btn-danger {
+    @apply soc-btn bg-soc-danger hover:bg-red-600 text-white focus:ring-soc-danger;
+  }
+
+  .soc-btn-ghost {
+    @apply soc-btn bg-transparent hover:bg-soc-surface text-soc-muted hover:text-soc-text
+           border border-soc-border;
+  }
+}
