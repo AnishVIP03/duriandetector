@@ -51,6 +51,12 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        from django.conf import settings
+
+        # In demo mode, authenticate across all tier databases
+        if getattr(settings, 'DEMO_MODE', False):
+            return self._demo_login(request)
+
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
@@ -70,6 +76,48 @@ class LoginView(APIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }
+        })
+
+    def _demo_login(self, request):
+        """Login that checks all tier databases for the user."""
+        from .auth_backends import authenticate_across_databases, get_tokens_for_user
+
+        email = request.data.get('email', '')
+        password = request.data.get('password', '')
+
+        if not email or not password:
+            return Response(
+                {'error': 'Email and password are required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user, db_alias = authenticate_across_databases(email, password)
+
+        if not user:
+            return Response(
+                {'error': 'Invalid email or password.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if user.is_suspended:
+            return Response(
+                {'error': 'Your account has been suspended.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Update last login IP
+        ip = self._get_client_ip(request)
+        CustomUser.objects.using(db_alias).filter(pk=user.pk).update(
+            last_login_ip=ip
+        )
+
+        # Generate tokens with db claim
+        tokens = get_tokens_for_user(user, db_alias)
+
+        return Response({
+            'message': 'Login successful.',
+            'user': UserProfileSerializer(user).data,
+            'tokens': tokens,
         })
 
     def _get_client_ip(self, request):

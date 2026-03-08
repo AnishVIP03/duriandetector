@@ -5,6 +5,9 @@ import { useAuthStore } from './store/authStore';
 import MainLayout from './components/layout/MainLayout';
 import AuthLayout from './components/layout/AuthLayout';
 
+// Tier gating
+import TierGate from './components/common/TierGate';
+
 // Pages — Auth & Setup
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
@@ -136,34 +139,33 @@ export default function App() {
           </ProtectedRoute>
         }
       >
+        {/* Free tier — accessible to all users */}
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/alerts" element={<AlertListPage />} />
         <Route path="/alerts/:id" element={<AlertDetailPage />} />
         <Route path="/alerts/map" element={<GeoIPMapPage />} />
         <Route path="/threats" element={<ThreatsPage />} />
-        <Route path="/mitre" element={<MitreHeatmapPage />} />
-        <Route path="/globe" element={<GlobePage />} />
-
-        {/* Phase 3 — Premium Features */}
-        <Route path="/incidents" element={<IncidentListPage />} />
-        <Route path="/ml-config" element={<MLConfigPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/system" element={<SystemStatusPage />} />
-
-        {/* AI Chatbot */}
         <Route path="/chatbot" element={<ChatbotPage />} />
-
-        {/* Phase 4 — Team, Subscription, Admin */}
-        <Route path="/team" element={<TeamPage />} />
         <Route path="/subscription" element={<SubscriptionPage />} />
+        <Route path="/demo" element={<DemoPage />} />
+
+        {/* Premium tier — requires premium subscription or above */}
+        <Route path="/incidents" element={<TierGate requiredTier="premium" featureName="Incident Management"><IncidentListPage /></TierGate>} />
+        <Route path="/ml-config" element={<TierGate requiredTier="premium" featureName="ML Configuration"><MLConfigPage /></TierGate>} />
+        <Route path="/reports" element={<TierGate requiredTier="premium" featureName="Reports"><ReportsPage /></TierGate>} />
+        <Route path="/system" element={<TierGate requiredTier="premium" featureName="System Status"><SystemStatusPage /></TierGate>} />
+        <Route path="/mitre" element={<TierGate requiredTier="premium" featureName="MITRE ATT&CK"><MitreHeatmapPage /></TierGate>} />
+        <Route path="/packets" element={<TierGate requiredTier="premium" featureName="Packet Inspector"><PacketInspectorPage /></TierGate>} />
+
+        {/* Exclusive tier — requires exclusive subscription or above */}
+        <Route path="/globe" element={<TierGate requiredTier="exclusive" featureName="3D Globe"><GlobePage /></TierGate>} />
+        <Route path="/attack-chains" element={<TierGate requiredTier="exclusive" featureName="Attack Chains"><AttackChainPage /></TierGate>} />
+        <Route path="/team" element={<TierGate requiredTier="exclusive" featureName="Team Management"><TeamPage /></TierGate>} />
+
+        {/* Admin only */}
         <Route path="/admin/users" element={<AdminUsersPage />} />
         <Route path="/admin/audit" element={<AdminAuditPage />} />
         <Route path="/admin/health" element={<AdminHealthPage />} />
-
-        {/* Phase 5 — Wow Features */}
-        <Route path="/attack-chains" element={<AttackChainPage />} />
-        <Route path="/packets" element={<PacketInspectorPage />} />
-        <Route path="/demo" element={<DemoPage />} />
       </Route>
 
       {/* Catch-all */}

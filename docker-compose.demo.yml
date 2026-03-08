@@ -1,0 +1,25 @@
+services:
+  # PostgreSQL — hosts 3 databases (free, premium, exclusive)
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: demo_user
+      POSTGRES_PASSWORD: demo_password
+      POSTGRES_DB: duriandetector_free
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_demo:/var/lib/postgresql/data
+      - ./init-demo-dbs.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Redis — used by Celery broker and Django Channels
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_demo:/data
+
+volumes:
+  postgres_demo:
+  redis_demo:

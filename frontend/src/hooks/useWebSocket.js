@@ -5,7 +5,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000';
+const WS_BASE_URL = import.meta.env.VITE_WS_URL ||
+  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000`;
 
 export function useWebSocket(path, { onMessage, autoConnect = true } = {}) {
   const wsRef = useRef(null);

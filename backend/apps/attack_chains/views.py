@@ -16,6 +16,7 @@ from .serializers import (
 )
 from apps.alerts.models import Alert, BlockedIP
 from apps.environments.models import EnvironmentMembership
+from apps.accounts.permissions import SubscriptionRequired
 
 
 def _get_user_environment(user):
@@ -32,7 +33,8 @@ class AttackChainListView(generics.ListAPIView):
     Returns existing AttackChain objects ordered by most recent activity.
     """
     serializer_class = AttackChainListSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, SubscriptionRequired]
+    required_tier = 'exclusive'
 
     def get_queryset(self):
         env = _get_user_environment(self.request.user)

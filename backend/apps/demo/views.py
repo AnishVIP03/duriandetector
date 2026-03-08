@@ -222,6 +222,9 @@ class DemoStartView(APIView):
             ts = now - timedelta(hours=hours_ago)
             Alert.objects.filter(pk=alert.pk).update(timestamp=ts)
 
+        # Demo mode: fan out alerts to other tier databases
+        self._fanout_demo_alerts(created_alerts, now)
+
         # Create a couple of attack chains from the demo data
         demo_alerts = list(Alert.objects.filter(
             environment=env,
@@ -289,6 +292,61 @@ class DemoStartView(APIView):
             'severity_summary': severity_summary,
             'type_summary': type_summary,
         }, status=status.HTTP_201_CREATED)
+
+    def _fanout_demo_alerts(self, alert_templates, now):
+        """Replicate demo alerts to other tier databases so all users see them."""
+        from django.conf import settings as django_settings
+        if not getattr(django_settings, 'DEMO_MODE', False):
+            return
+
+        from config.db_router import get_current_db
+
+        current_db = get_current_db()
+        other_dbs = [db for db in ['free_db', 'premium_db', 'exclusive_db'] if db != current_db]
+
+        for db_alias in other_dbs:
+            try:
+                env = Environment.objects.using(db_alias).first()
+                if not env:
+                    continue
+
+                db_alerts = []
+                for template in alert_templates:
+                    db_alerts.append(Alert(
+                        environment=env,
+                        src_ip=template.src_ip,
+                        dst_ip=template.dst_ip,
+                        src_port=template.src_port,
+                        dst_port=template.dst_port,
+                        protocol=template.protocol,
+                        alert_type=template.alert_type,
+                        severity=template.severity,
+                        confidence_score=template.confidence_score,
+                        raw_payload=template.raw_payload,
+                        latitude=template.latitude,
+                        longitude=template.longitude,
+                        country=template.country,
+                        city=template.city,
+                        is_blocked=False,
+                        ml_model_used=template.ml_model_used,
+                        mitre_tactic=template.mitre_tactic,
+                        mitre_technique_id=template.mitre_technique_id,
+                    ))
+
+                Alert.objects.using(db_alias).bulk_create(db_alerts)
+
+                # Randomize timestamps
+                fanout_demo = Alert.objects.using(db_alias).filter(
+                    environment=env,
+                    raw_payload__startswith=DEMO_TAG,
+                ).order_by('id')
+                for alert in fanout_demo:
+                    hours_ago = random.uniform(0, 24)
+                    ts = now - timedelta(hours=hours_ago)
+                    Alert.objects.using(db_alias).filter(pk=alert.pk).update(timestamp=ts)
+
+            except Exception:
+                pass  # Don't fail if a tier DB is unavailable
 
 
 class DemoStatusView(APIView):

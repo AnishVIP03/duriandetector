@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.environments.models import EnvironmentMembership
 from apps.alerts.models import Alert
+from apps.accounts.permissions import SubscriptionRequired
 from .models import Incident, IncidentNote
 from .serializers import (
     IncidentListSerializer,
@@ -35,7 +36,8 @@ class IncidentListCreateView(generics.ListCreateAPIView):
     GET:  List incidents for the user's environment with filtering and search.
     POST: Create a new incident, optionally linking existing alert IDs.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, SubscriptionRequired]
+    required_tier = 'premium'
     filterset_fields = ['severity', 'status']
     search_fields = ['title']
     ordering = ['-created_at']

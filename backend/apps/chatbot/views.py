@@ -216,6 +216,63 @@ def _fallback_response(user_message):
     )
 
 
+def _fallback_free_response(user_message):
+    """
+    Free tier: short, basic tips without MITRE ATT&CK details.
+    Encourages upgrading to Premium for more detail.
+    """
+    msg = user_message.lower()
+
+    if any(kw in msg for kw in ['port scan', 'scanning', 'reconnaissance']):
+        return (
+            "Port scanning detected? Check if the source IP is external and consider blocking it. "
+            "Review your firewall rules to ensure only necessary ports are exposed.\n\n"
+            "*Upgrade to Premium for detailed MITRE ATT&CK analysis and step-by-step investigation guides.*"
+        )
+
+    if any(kw in msg for kw in ['brute force', 'password', 'login attempt']):
+        return (
+            "Brute force attack detected? Enable account lockout policies and consider implementing MFA. "
+            "Block the attacking IP immediately.\n\n"
+            "*Upgrade to Premium for detailed remediation steps and MITRE ATT&CK mapping.*"
+        )
+
+    if any(kw in msg for kw in ['dos', 'ddos', 'denial of service', 'flood']):
+        return (
+            "DoS/DDoS attack? Enable rate limiting and block malicious IPs. "
+            "Monitor your system resources (CPU, memory, bandwidth).\n\n"
+            "*Upgrade to Premium for comprehensive DoS analysis and mitigation strategies.*"
+        )
+
+    if any(kw in msg for kw in ['sql injection', 'sqli', 'injection']):
+        return (
+            "SQL injection detected? Ensure your application uses parameterized queries. "
+            "Review the alert payload and check application logs.\n\n"
+            "*Upgrade to Premium for detailed investigation steps and WAF recommendations.*"
+        )
+
+    if any(kw in msg for kw in ['block', 'firewall', 'ban']):
+        return (
+            "To block a malicious IP, go to the alert detail page and click 'Block IP'. "
+            "The IP will be added to your environment's blocklist.\n\n"
+            "*Upgrade to Premium for advanced threat analysis and team-based IP management.*"
+        )
+
+    if any(kw in msg for kw in ['help', 'what can you do', 'how']):
+        return (
+            "I'm DurianBot (Basic Mode). I can give you quick tips on:\n"
+            "- Port scans, brute force, DoS attacks\n"
+            "- IP blocking and basic firewall advice\n\n"
+            "*Upgrade to Premium for MITRE ATT&CK analysis, or Exclusive for full AI-powered assistance.*"
+        )
+
+    return (
+        "I'm DurianBot running in Basic mode. I can help with quick security tips.\n\n"
+        "Try asking about: port scans, brute force attacks, DoS, SQL injection, or IP blocking.\n\n"
+        "*Upgrade to Premium for detailed analysis or Exclusive for AI-powered responses.*"
+    )
+
+
 class ChatSessionListView(generics.ListAPIView):
     """List all chat sessions for the authenticated user."""
     serializer_class = ChatSessionListSerializer
@@ -279,23 +336,38 @@ class ChatSendMessageView(APIView):
             content=user_message,
         )
 
-        # Build messages for Ollama
-        alert_context = _build_alert_context(user)
-        system_content = f"{SYSTEM_PROMPT}\n\nCurrent Environment Data:\n{alert_context}"
+        # ── Tier-based response logic ──
+        user_role = user.role
+        chatbot_tier = 'basic'
 
-        ollama_messages = [{"role": "system", "content": system_content}]
+        if user_role in ('exclusive', 'admin'):
+            # EXCLUSIVE: Full Ollama LLM with alert context + conversation history
+            chatbot_tier = 'ai'
+            alert_context = _build_alert_context(user)
+            system_content = f"{SYSTEM_PROMPT}\n\nCurrent Environment Data:\n{alert_context}"
 
-        # Include conversation history (last 20 messages for context)
-        history = ChatMessage.objects.filter(session=session).exclude(
-            role=ChatMessage.Role.SYSTEM
-        ).order_by('timestamp')[:20]
-        for msg in history:
-            ollama_messages.append({"role": msg.role, "content": msg.content})
+            ollama_messages = [{"role": "system", "content": system_content}]
 
-        # Try Ollama, fall back to pattern-matching responses
-        assistant_content = _call_ollama(ollama_messages)
-        if not assistant_content:
+            history = ChatMessage.objects.filter(session=session).exclude(
+                role=ChatMessage.Role.SYSTEM
+            ).order_by('timestamp')[:20]
+            for msg in history:
+                ollama_messages.append({"role": msg.role, "content": msg.content})
+
+            assistant_content = _call_ollama(ollama_messages)
+            if not assistant_content:
+                # Fallback to premium-level if Ollama is unavailable
+                assistant_content = _fallback_response(user_message)
+
+        elif user_role == 'premium':
+            # PREMIUM: Detailed pattern-matching with MITRE ATT&CK references
+            chatbot_tier = 'enhanced'
             assistant_content = _fallback_response(user_message)
+
+        else:
+            # FREE: Basic short tips, encourages upgrade
+            chatbot_tier = 'basic'
+            assistant_content = _fallback_free_response(user_message)
 
         # Save assistant message
         assistant_msg = ChatMessage.objects.create(
@@ -312,4 +384,5 @@ class ChatSendMessageView(APIView):
             "session_title": session.title,
             "user_message": ChatMessageSerializer(user_msg).data,
             "assistant_message": ChatMessageSerializer(assistant_msg).data,
+            "chatbot_tier": chatbot_tier,
         }, status=status.HTTP_200_OK)

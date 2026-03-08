@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { chatbotAPI } from '../../api/chatbot';
+import { useAuthStore } from '../../store/authStore';
 
 const SUGGESTED_PROMPTS = [
   'What are the latest critical alerts?',
@@ -119,6 +120,7 @@ function SessionItem({ session, isActive, onClick, onDelete }) {
 }
 
 export default function ChatbotPage() {
+  const { user } = useAuthStore();
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -126,6 +128,10 @@ export default function ChatbotPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sessionsLoading, setSessionsLoading] = useState(true);
+
+  // Determine chatbot tier label
+  const tierLabel = user?.role === 'exclusive' || user?.role === 'admin' ? 'AI Mode' : user?.role === 'premium' ? 'Enhanced' : 'Basic';
+  const tierColor = user?.role === 'exclusive' || user?.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : user?.role === 'premium' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400';
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -316,7 +322,12 @@ export default function ChatbotPage() {
               <Bot className="w-4 h-4 text-soc-accent" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">DurianBot</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-white">DurianBot</h2>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${tierColor}`}>
+                  {tierLabel}
+                </span>
+              </div>
               <p className="text-xs text-soc-muted">AI Security Assistant</p>
             </div>
           </div>
@@ -411,7 +422,11 @@ export default function ChatbotPage() {
             </button>
           </div>
           <p className="text-center text-xs text-soc-muted/50 mt-2">
-            DurianBot may provide general guidance. Always verify with your security team.
+            {user?.role === 'exclusive' || user?.role === 'admin'
+              ? 'DurianBot is powered by AI. Responses may vary.'
+              : user?.role === 'premium'
+              ? 'DurianBot is in enhanced mode. Upgrade to Exclusive for AI-powered analysis.'
+              : 'DurianBot is in basic mode. Upgrade to Premium for detailed analysis.'}
           </p>
         </div>
       </div>

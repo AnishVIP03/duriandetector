@@ -20,6 +20,7 @@ from .serializers import (
 )
 from apps.alerts.models import Alert, BlockedIP
 from apps.environments.models import EnvironmentMembership
+from apps.accounts.permissions import SubscriptionRequired
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,8 @@ class ReportListView(generics.ListAPIView):
     Ordered by most recently created.
     """
     serializer_class = ReportListSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, SubscriptionRequired]
+    required_tier = 'premium'
 
     def get_queryset(self):
         env = _get_user_environment(self.request.user)

@@ -9,11 +9,13 @@ from django.utils import timezone
 from .models import CaptureSession
 from .serializers import CaptureSessionSerializer, StartCaptureSerializer
 from apps.environments.models import EnvironmentMembership
+from apps.accounts.permissions import SubscriptionRequired
 
 
 class StartCaptureView(APIView):
     """Start a new packet capture session."""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, SubscriptionRequired]
+    required_tier = 'premium'
 
     def post(self, request):
         serializer = StartCaptureSerializer(data=request.data)

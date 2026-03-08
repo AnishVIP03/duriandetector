@@ -12,6 +12,30 @@ from asgiref.sync import async_to_sync
 logger = logging.getLogger(__name__)
 
 
+def _fanout_alert(alert_data):
+    """
+    In demo mode, replicate an alert to ALL tier databases so every
+    user (free/premium/exclusive) sees the same attack.
+    """
+    from django.conf import settings
+    if not getattr(settings, 'DEMO_MODE', False):
+        return
+
+    from apps.alerts.models import Alert
+    from apps.environments.models import Environment
+
+    for db_alias in ['free_db', 'premium_db', 'exclusive_db']:
+        try:
+            env = Environment.objects.using(db_alias).first()
+            if env:
+                Alert.objects.using(db_alias).create(
+                    environment=env,
+                    **alert_data,
+                )
+        except Exception as e:
+            logger.warning(f"Alert fanout to {db_alias} failed: {e}")
+
+
 def _get_severity(confidence, alert_type):
     """Determine alert severity based on confidence and type."""
     if alert_type in ('dos', 'brute_force') and confidence > 0.8:
@@ -182,27 +206,34 @@ def capture_packets_task(self, session_id, environment_id, interface='eth0',
                     # GeoIP lookup
                     geo = _lookup_geoip(features['src_ip'])
 
+                    alert_data = {
+                        'src_ip': features['src_ip'],
+                        'dst_ip': features['dst_ip'],
+                        'src_port': features['src_port'],
+                        'dst_port': features['dst_port'],
+                        'protocol': features['protocol'],
+                        'alert_type': label,
+                        'severity': severity,
+                        'confidence_score': round(confidence, 4),
+                        'raw_payload': features.get('raw_payload', ''),
+                        'latitude': geo.get('latitude'),
+                        'longitude': geo.get('longitude'),
+                        'country': geo.get('country', ''),
+                        'city': geo.get('city', ''),
+                        'ml_model_used': type(engine.model).__name__,
+                        'mitre_tactic': mitre_tactic,
+                        'mitre_technique_id': mitre_technique_id,
+                    }
+
                     try:
                         alert = Alert.objects.create(
                             environment_id=environment_id,
-                            src_ip=features['src_ip'],
-                            dst_ip=features['dst_ip'],
-                            src_port=features['src_port'],
-                            dst_port=features['dst_port'],
-                            protocol=features['protocol'],
-                            alert_type=label,
-                            severity=severity,
-                            confidence_score=round(confidence, 4),
-                            raw_payload=features.get('raw_payload', ''),
-                            latitude=geo.get('latitude'),
-                            longitude=geo.get('longitude'),
-                            country=geo.get('country', ''),
-                            city=geo.get('city', ''),
-                            ml_model_used=type(engine.model).__name__,
-                            mitre_tactic=mitre_tactic,
-                            mitre_technique_id=mitre_technique_id,
+                            **alert_data,
                         )
                         alerts_generated += 1
+
+                        # Demo mode: fan out alert to all tier databases
+                        _fanout_alert(alert_data)
 
                         # Broadcast alert to WebSocket
                         try:

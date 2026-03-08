@@ -11,6 +11,7 @@ from django.utils import timezone
 from .models import MLModelConfig, MLModelMetrics
 from .serializers import MLModelConfigSerializer, MLModelMetricsSerializer
 from apps.environments.models import EnvironmentMembership
+from apps.accounts.permissions import SubscriptionRequired
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,8 @@ class MLConfigView(APIView):
     GET  /api/ml/config/ — retrieve current ML config for the user's environment.
     PATCH /api/ml/config/ — update model type, sensitivity, thresholds.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, SubscriptionRequired]
+    required_tier = 'premium'
 
     def get(self, request):
         environment = _get_user_environment(request.user)

@@ -30,6 +30,30 @@ class IsExclusiveOrAbove(BasePermission):
         return request.user.role in ('exclusive', 'admin')
 
 
+class SubscriptionRequired(BasePermission):
+    """
+    Check user has the required subscription tier.
+    Usage: set view attribute `required_tier = 'premium'` or `'exclusive'`.
+    """
+    TIER_HIERARCHY = {
+        'free': 0,
+        'premium': 1,
+        'exclusive': 2,
+        'admin': 3,
+    }
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        required = getattr(view, 'required_tier', 'free')
+        user_level = self.TIER_HIERARCHY.get(request.user.role, 0)
+        required_level = self.TIER_HIERARCHY.get(required, 0)
+        if user_level < required_level:
+            self.message = f'This feature requires a {required} subscription or above. Please upgrade your plan.'
+            return False
+        return True
+
+
 class IsTeamLeader(BasePermission):
     """Allow team leaders only."""
     def has_permission(self, request, view):

@@ -10,31 +10,33 @@ import {
   FileText, Settings, Users, CreditCard,
   Activity, Brain, Globe, Crosshair,
   MessageSquare, LogOut, Menu, X, ChevronDown,
-  Network, BookOpen, Zap, UserCog, ClipboardList, Play
+  Network, BookOpen, Zap, UserCog, ClipboardList, Play, Lock
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authAPI } from '../../api/auth';
 import toast from 'react-hot-toast';
+
+const TIER_LEVELS = { free: 0, premium: 1, exclusive: 2, admin: 3 };
 
 const navItems = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Alerts', path: '/alerts', icon: Bell },
   { label: 'GeoIP Map', path: '/alerts/map', icon: Globe },
   { label: 'Threats', path: '/threats', icon: AlertTriangle },
-  { label: 'Incidents', path: '/incidents', icon: Crosshair },
-  { label: 'ML Config', path: '/ml-config', icon: Brain },
-  { label: 'System', path: '/system', icon: Activity },
-  { label: 'Reports', path: '/reports', icon: FileText },
+  { label: 'Incidents', path: '/incidents', icon: Crosshair, requiredTier: 'premium' },
+  { label: 'ML Config', path: '/ml-config', icon: Brain, requiredTier: 'premium' },
+  { label: 'System', path: '/system', icon: Activity, requiredTier: 'premium' },
+  { label: 'Reports', path: '/reports', icon: FileText, requiredTier: 'premium' },
   { label: 'DurianBot', path: '/chatbot', icon: MessageSquare },
-  { label: 'Team', path: '/team', icon: Users },
+  { label: 'Team', path: '/team', icon: Users, requiredTier: 'exclusive' },
   { label: 'Subscription', path: '/subscription', icon: CreditCard },
 ];
 
 const wowItems = [
-  { label: '3D Globe', path: '/globe', icon: Globe },
-  { label: 'Attack Chains', path: '/attack-chains', icon: Zap },
-  { label: 'MITRE ATT&CK', path: '/mitre', icon: BookOpen },
-  { label: 'Packet Inspector', path: '/packets', icon: Network },
+  { label: '3D Globe', path: '/globe', icon: Globe, requiredTier: 'exclusive' },
+  { label: 'Attack Chains', path: '/attack-chains', icon: Zap, requiredTier: 'exclusive' },
+  { label: 'MITRE ATT&CK', path: '/mitre', icon: BookOpen, requiredTier: 'premium' },
+  { label: 'Packet Inspector', path: '/packets', icon: Network, requiredTier: 'premium' },
   { label: 'Demo Mode', path: '/demo', icon: Play },
 ];
 
@@ -59,7 +61,7 @@ export default function MainLayout() {
     }
     logout();
     toast.success('Logged out successfully');
-    navigate('/login');
+    navigate('/');
   };
 
   const isAdmin = user?.role === 'admin';
@@ -86,22 +88,28 @@ export default function MainLayout() {
 
             {/* Nav */}
             <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
-                      isActive
-                        ? 'bg-soc-accent/10 text-soc-accent border border-soc-accent/20'
-                        : 'text-soc-muted hover:bg-soc-surface hover:text-soc-text'
-                    }`
-                  }
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </NavLink>
-              ))}
+              {navItems.map((item) => {
+                const isLocked = item.requiredTier && (TIER_LEVELS[user?.role] ?? 0) < (TIER_LEVELS[item.requiredTier] ?? 0);
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
+                        isActive
+                          ? 'bg-soc-accent/10 text-soc-accent border border-soc-accent/20'
+                          : isLocked
+                          ? 'text-soc-muted/40 hover:bg-soc-surface/50'
+                          : 'text-soc-muted hover:bg-soc-surface hover:text-soc-text'
+                      }`
+                    }
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span className="flex-1">{item.label}</span>
+                    {isLocked && <Lock className="w-3 h-3 text-soc-muted/40" />}
+                  </NavLink>
+                );
+              })}
 
               {/* Wow Features Section */}
               <button
@@ -120,22 +128,28 @@ export default function MainLayout() {
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden pl-2 space-y-1"
                   >
-                    {wowItems.map((item) => (
-                      <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
-                            isActive
-                              ? 'bg-soc-accent/10 text-soc-accent border border-soc-accent/20'
-                              : 'text-soc-muted hover:bg-soc-surface hover:text-soc-text'
-                          }`
-                        }
-                      >
-                        <item.icon className="w-4 h-4" />
-                        {item.label}
-                      </NavLink>
-                    ))}
+                    {wowItems.map((item) => {
+                      const isLocked = item.requiredTier && (TIER_LEVELS[user?.role] ?? 0) < (TIER_LEVELS[item.requiredTier] ?? 0);
+                      return (
+                        <NavLink
+                          key={item.path}
+                          to={item.path}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+                              isActive
+                                ? 'bg-soc-accent/10 text-soc-accent border border-soc-accent/20'
+                                : isLocked
+                                ? 'text-soc-muted/40 hover:bg-soc-surface/50'
+                                : 'text-soc-muted hover:bg-soc-surface hover:text-soc-text'
+                            }`
+                          }
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span className="flex-1">{item.label}</span>
+                          {isLocked && <Lock className="w-3 h-3 text-soc-muted/40" />}
+                        </NavLink>
+                      );
+                    })}
                   </motion.div>
                 )}
               </AnimatePresence>
