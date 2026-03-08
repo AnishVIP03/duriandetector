@@ -213,9 +213,58 @@ hydra -l root -P /usr/share/wordlists/rockyou.txt <LAN-IP> ssh
 
 ### DurianBot Chatbot Tiers
 
-- **Basic** (Free) — Short tips, no MITRE references, upgrade prompts
-- **Enhanced** (Premium) — Detailed steps with MITRE ATT&CK mapping, alert context
-- **AI Mode** (Exclusive) — Full Ollama LLM analysis with conversation history
+DurianBot has a friendly, conversational personality across all tiers — it handles greetings, jokes, casual chat, and security questions naturally.
+
+- **Basic** (Free) — Concise security tips with personality, upgrade prompts
+- **Enhanced** (Premium) — Detailed MITRE ATT&CK analysis, step-by-step guides, alert context
+- **AI Mode** (Exclusive) — Full Ollama LLM with conversation history, personality, and deep analysis
+
+### Enabling DurianBot AI Mode (Ollama)
+
+The Exclusive tier's AI Mode requires Ollama running on PC1. Without it, the chatbot gracefully falls back to Enhanced mode. AI Mode gives the chatbot full conversational AI capabilities — it can answer any question, maintain context across messages, and provide deep security analysis.
+
+#### Windows (Recommended for demo — more CPU power)
+
+```powershell
+# 1. Download and install Ollama from: https://ollama.com/download/windows
+#    Run the installer — it adds 'ollama' to your PATH automatically.
+
+# 2. Open PowerShell or CMD and pull the model:
+ollama pull llama3.2
+
+# 3. Start the Ollama server (keep this running during the demo):
+ollama serve
+
+# Ollama runs on http://localhost:11434 — Django connects automatically.
+# If you have an NVIDIA GPU, Ollama uses it automatically for faster responses.
+```
+
+#### macOS
+
+```bash
+# Option 1: Homebrew
+brew install ollama
+ollama pull llama3.2
+ollama serve
+
+# Option 2: Download from https://ollama.com/download/mac
+# Then run:
+ollama pull llama3.2
+ollama serve
+```
+
+#### Linux
+
+```bash
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull model and start server
+ollama pull llama3.2
+ollama serve
+```
+
+> **Tip:** Run `ollama serve` in a separate terminal before starting `demo-setup.sh`. The chatbot will automatically detect and connect to it. If Ollama isn't running, Exclusive users still get Enhanced-level responses — no errors or crashes.
 
 ---
 
@@ -286,8 +335,10 @@ duriandetector/
 | Port 8000/5173 in use | `lsof -i :8000` then `kill -9 <PID>` |
 | Can't connect from other PCs | All PCs must be on the same WiFi. Check firewall settings. |
 | Mac overheating | Normal during demo. Press Ctrl+C when done. |
-| Chatbot AI mode not working | Install Ollama: `brew install ollama && ollama pull llama3.2 && ollama serve` |
+| Chatbot AI mode not working | Install Ollama (see "Enabling DurianBot AI Mode" above), pull `llama3.2`, and run `ollama serve` |
+| Ollama responses are slow | Normal on CPU-only machines. Use a PC with an NVIDIA GPU for faster responses |
 | Windows: `demo-setup.sh` won't run | Use Git Bash or WSL to run the script |
+| Windows: `ollama` not found | Restart your terminal after installing Ollama, or use the full path |
 
 ---
 
