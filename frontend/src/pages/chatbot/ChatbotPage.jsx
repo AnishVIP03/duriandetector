@@ -14,10 +14,10 @@ import { chatbotAPI } from '../../api/chatbot';
 import { useAuthStore } from '../../store/authStore';
 
 const SUGGESTED_PROMPTS = [
+  'Hey DurianBot, what can you do?',
   'What are the latest critical alerts?',
-  'Explain the top threat sources',
   'How do I investigate a port scan?',
-  'What MITRE techniques should I watch for?',
+  'Help me understand brute force attacks',
 ];
 
 function TypingIndicator() {
@@ -47,6 +47,45 @@ function TypingIndicator() {
       </div>
     </div>
   );
+}
+
+function formatMessage(text) {
+  // Simple markdown-like formatting for bot messages
+  // Bold: **text** or __text__
+  // Italic: *text* or _text_ (single)
+  // Code: `text`
+  // Handle line by line to preserve whitespace
+  const parts = [];
+  const regex = /(\*\*(.+?)\*\*|`(.+?)`|\*(.+?)\*)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add text before match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[2]) {
+      // Bold **text**
+      parts.push(<strong key={match.index} className="font-semibold text-white">{match[2]}</strong>);
+    } else if (match[3]) {
+      // Code `text`
+      parts.push(<code key={match.index} className="bg-soc-bg/50 px-1.5 py-0.5 rounded text-soc-accent text-xs font-mono">{match[3]}</code>);
+    } else if (match[4]) {
+      // Italic *text*
+      parts.push(<em key={match.index} className="text-soc-muted italic">{match[4]}</em>);
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
 }
 
 function MessageBubble({ message, index }) {
@@ -80,7 +119,7 @@ function MessageBubble({ message, index }) {
             : 'bg-soc-surface border border-soc-border text-soc-text rounded-tl-sm'
         }`}
       >
-        {message.content}
+        {isUser ? message.content : formatMessage(message.content)}
       </div>
     </motion.div>
   );
@@ -353,7 +392,7 @@ export default function ChatbotPage() {
                   Ask DurianBot
                 </h3>
                 <p className="text-sm text-soc-muted max-w-md mb-8">
-                  Ask DurianBot about your security alerts, threats, or network activity
+                  Hey there! I'm DurianBot — your friendly security assistant. Ask me about alerts, threats, or just say hi!
                 </p>
 
                 {/* Suggested prompts */}
@@ -398,7 +437,7 @@ export default function ChatbotPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask DurianBot about alerts, threats, or security..."
+                placeholder="Type a message — ask about security or just say hi..."
                 rows={1}
                 className="w-full resize-none bg-soc-surface border border-soc-border rounded-xl px-4 py-3 pr-12 text-sm text-soc-text placeholder-soc-muted focus:outline-none focus:border-soc-accent/50 focus:ring-1 focus:ring-soc-accent/20 transition-all"
                 style={{ minHeight: '44px', maxHeight: '120px' }}
