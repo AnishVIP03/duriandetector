@@ -41,9 +41,9 @@ mindmap
         User Management
         Audit Logs
         System Health
-    Backend — Django 5
+    Backend — Django 6
       REST API — DRF
-        JWT Authentication
+        JWT Authentication (Multi-DB)
         58+ Endpoints
         Pagination & Filtering
       15 Django Apps
@@ -79,7 +79,7 @@ mindmap
       Scapy — Packet Capture
       Ollama — Local LLM
       Redis — Cache & Broker
-      SQLite / PostgreSQL
+      PostgreSQL 16 (3 databases)
       GeoIP2 — IP Geolocation
 ```
 
@@ -228,7 +228,7 @@ flowchart TB
     end
 
     subgraph API ["API Layer"]
-        DJ[Django 5] --- DRF[Django REST Framework]
+        DJ[Django 6] --- DRF[Django REST Framework]
         DJ --- JWT[SimpleJWT Auth]
         DJ --- CH[Django Channels]
         DJ --- CL[Celery]
@@ -242,7 +242,7 @@ flowchart TB
     end
 
     subgraph Data ["Data Layer"]
-        DB[(SQLite / PostgreSQL)]
+        DB[(PostgreSQL 16)]
         RD[(Redis)]
         OL[Ollama LLM]
         GI[GeoIP2 Database]
@@ -346,6 +346,107 @@ flowchart TD
     style C fill:#f97316,stroke:#f97316,color:#fff
     style H fill:#ef4444,stroke:#ef4444,color:#fff
     style L fill:#22c55e,stroke:#22c55e,color:#fff
+```
+
+---
+
+## 7. 5-Computer Live Demo Architecture
+
+```mermaid
+flowchart TB
+    subgraph PC1["PC1 — Server + Admin"]
+        DJ[Django 6 Backend]
+        VT[Vite Frontend]
+        PG[(PostgreSQL 16)]
+        RD[(Redis 7)]
+        CL[Celery Worker]
+        OL[Ollama LLM]
+
+        PG --- DB1[(free_db)]
+        PG --- DB2[(premium_db)]
+        PG --- DB3[(exclusive_db)]
+
+        DJ <--> PG
+        DJ <--> RD
+        DJ <--> CL
+        DJ <--> OL
+    end
+
+    subgraph PC2["PC2 — Free User"]
+        B1[Browser]
+    end
+
+    subgraph PC3["PC3 — Premium User"]
+        B2[Browser]
+    end
+
+    subgraph PC4["PC4 — Exclusive User"]
+        B3[Browser]
+    end
+
+    subgraph PC5["PC5 — Attacker"]
+        NM[nmap]
+        HP[hping3]
+        HY[hydra]
+    end
+
+    B1 <-->|HTTP + WebSocket| VT
+    B2 <-->|HTTP + WebSocket| VT
+    B3 <-->|HTTP + WebSocket| VT
+    VT <-->|REST API| DJ
+
+    NM -->|Port Scan| DJ
+    HP -->|DoS Flood| DJ
+    HY -->|Brute Force| DJ
+
+    style PC1 fill:#1e293b,stroke:#22c55e,color:#fff
+    style PC2 fill:#1e293b,stroke:#3b82f6,color:#fff
+    style PC3 fill:#1e293b,stroke:#6366f1,color:#fff
+    style PC4 fill:#1e293b,stroke:#eab308,color:#fff
+    style PC5 fill:#1e293b,stroke:#ef4444,color:#fff
+```
+
+---
+
+## 8. DurianBot Chatbot Tier Flow
+
+```mermaid
+flowchart TD
+    A[User sends message] --> B{Check user.role}
+
+    B -->|role = free| C[Basic Mode]
+    C --> C1{Casual conversation?}
+    C1 -->|Yes| C2[Greeting / Thanks / Joke / Identity]
+    C1 -->|No| C3{Security question match?}
+    C3 -->|Yes| C4[Concise tip + upgrade prompt]
+    C3 -->|No| C5[Friendly generic fallback]
+
+    B -->|role = premium| D[Enhanced Mode]
+    D --> D1{Casual conversation?}
+    D1 -->|Yes| D2[Friendly response with personality]
+    D1 -->|No| D3{Security question match?}
+    D3 -->|Yes| D4[Detailed steps + MITRE ATT&CK + alert context]
+    D3 -->|No| D5[Helpful fallback with suggestions]
+
+    B -->|role = exclusive / admin| E[AI Mode]
+    E --> E1[Build system prompt + alert context]
+    E1 --> E2[Load last 20 messages as history]
+    E2 --> E3{Ollama available?}
+    E3 -->|Yes| E4[Full LLM response with personality]
+    E3 -->|No| E5[Fallback to Enhanced Mode]
+
+    C2 --> F[Save to ChatMessage + return]
+    C4 --> F
+    C5 --> F
+    D2 --> F
+    D4 --> F
+    D5 --> F
+    E4 --> F
+    E5 --> F
+
+    style C fill:#3b82f6,color:#fff
+    style D fill:#6366f1,color:#fff
+    style E fill:#eab308,color:#000
 ```
 
 ---
