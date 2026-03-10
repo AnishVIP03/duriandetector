@@ -2,7 +2,7 @@
 
 An AI-powered Intrusion Detection System with real-time attack detection, multi-tier subscription access, and an intelligent security chatbot.
 
-Built as a Final Year Project (FYP-26-S1-08).
+Final Year Project (FYP-26-S1-08).
 
 ---
 
