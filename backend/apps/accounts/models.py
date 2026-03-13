@@ -55,6 +55,12 @@ class CustomUser(AbstractUser):
         return f"{self.email} ({self.role})"
 
     def suspend(self, reason=''):
+        """
+        Suspend this user account — US-31.
+
+        Sets is_active=False to prevent login, records the suspension
+        timestamp and reason for audit purposes.
+        """
         self.is_suspended = True
         self.suspended_at = timezone.now()
         self.suspended_reason = reason
@@ -62,6 +68,12 @@ class CustomUser(AbstractUser):
         self.save(update_fields=['is_suspended', 'suspended_at', 'suspended_reason', 'is_active'])
 
     def unsuspend(self):
+        """
+        Reactivate a suspended user account — US-31.
+
+        Clears all suspension fields and restores login access
+        by setting is_active=True.
+        """
         self.is_suspended = False
         self.suspended_at = None
         self.suspended_reason = ''
@@ -82,4 +94,5 @@ class PasswordResetToken(models.Model):
 
     @property
     def is_valid(self):
+        """Return True if the token has not been used and has not expired."""
         return not self.used and self.expires_at > timezone.now()

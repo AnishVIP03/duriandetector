@@ -46,13 +46,14 @@ class AlertListView(generics.ListAPIView):
     ordering = ['-timestamp']
 
     def get_queryset(self):
+        """Filter alerts to the user's environment with optional query param filters."""
         env = _get_user_environment(self.request.user)
         if not env:
             return Alert.objects.none()
 
         qs = Alert.objects.filter(environment=env)
 
-        # Additional custom filters
+        # Additional custom filters beyond DRF's built-in filterset_fields
         src_ip = self.request.query_params.get('src_ip')
         if src_ip:
             qs = qs.filter(src_ip=src_ip)
@@ -61,6 +62,7 @@ class AlertListView(generics.ListAPIView):
         if country:
             qs = qs.filter(country__icontains=country)
 
+        # Date range filters for historical analysis
         date_from = self.request.query_params.get('date_from')
         if date_from:
             qs = qs.filter(timestamp__gte=date_from)
@@ -78,6 +80,7 @@ class AlertDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """Scope alert lookup to the user's environment."""
         env = _get_user_environment(self.request.user)
         if not env:
             return Alert.objects.none()
@@ -92,11 +95,12 @@ class GeoIPDataView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        """Return geo-located alerts and country-level aggregation for the map view."""
         env = _get_user_environment(request.user)
         if not env:
             return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Alerts with geo data
+        # Alerts with geo data (limited to 500 most recent for performance)
         alerts = Alert.objects.filter(
             environment=env,
             latitude__isnull=False,
@@ -125,6 +129,7 @@ class BlockIPView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, alert_id):
+        """Block the source IP of the given alert and mark all related alerts as blocked."""
         env = _get_user_environment(request.user)
         if not env:
             return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -137,7 +142,7 @@ class BlockIPView(APIView):
         serializer = BlockIPActionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Block the IP
+        # Create or reactivate a BlockedIP record for this source IP
         blocked, created = BlockedIP.objects.get_or_create(
             ip_address=alert.src_ip,
             environment=env,
@@ -172,6 +177,7 @@ class UnblockIPView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, alert_id):
+        """Deactivate the block on an alert's source IP and clear blocked flags on related alerts."""
         env = _get_user_environment(request.user)
         if not env:
             return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -202,6 +208,12 @@ class DashboardStatsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        """
+        Return aggregated dashboard statistics for the user's environment.
+
+        Includes: total/recent alert counts, severity and type breakdowns,
+        24-hour hourly trend data, top source IPs, and capture status.
+        """
         env = _get_user_environment(request.user)
         if not env:
             return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -214,7 +226,7 @@ class DashboardStatsView(APIView):
         alerts = Alert.objects.filter(environment=env)
         recent_alerts = alerts.filter(timestamp__gte=twenty_four_hours_ago)
 
-        # Severity breakdown
+        # Severity breakdown (last 24h)
         severity_counts = {}
         for sev in ['low', 'medium', 'high', 'critical']:
             severity_counts[sev] = recent_alerts.filter(severity=sev).count()
@@ -270,13 +282,16 @@ class BlockedIPListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """Filter blocked IPs by environment, with optional active/search filters."""
         env = _get_user_environment(self.request.user)
         if not env:
             return BlockedIP.objects.none()
         qs = BlockedIP.objects.filter(environment=env)
+        # Optional filter: show only active or inactive blocks
         is_active = self.request.query_params.get('is_active')
         if is_active is not None:
             qs = qs.filter(is_active=is_active.lower() == 'true')
+        # Optional search by IP address
         search = self.request.query_params.get('search')
         if search:
             qs = qs.filter(ip_address__icontains=search)
@@ -288,6 +303,7 @@ class UnblockIPByIdView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
+        """Unblock a specific IP by BlockedIP record ID and clear flags on related alerts."""
         env = _get_user_environment(request.user)
         if not env:
             return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -298,6 +314,7 @@ class UnblockIPByIdView(APIView):
         blocked.is_active = False
         blocked.unblocked_at = timezone.now()
         blocked.save(update_fields=['is_active', 'unblocked_at'])
+        # Clear blocked flags on all alerts from this IP
         Alert.objects.filter(
             environment=env, src_ip=blocked.ip_address
         ).update(is_blocked=False, blocked_at=None, blocked_by=None)
@@ -341,6 +358,14 @@ class AlertAnalyticsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        """
+        Return time-series alert data for custom visualization charts.
+
+        Supports query params:
+            - date_from / date_to: filter by time range
+            - group_by: 'hour', 'day', or 'week' (default: 'day')
+            - breakdown_by: optional field to group by (severity, alert_type, protocol, country)
+        """
         from django.db.models.functions import TruncHour, TruncDay, TruncWeek
         from django.db.models import Avg
 
@@ -350,6 +375,7 @@ class AlertAnalyticsView(APIView):
 
         qs = Alert.objects.filter(environment=env)
 
+        # Apply optional date range filters
         date_from = request.query_params.get('date_from')
         if date_from:
             qs = qs.filter(timestamp__gte=date_from)
@@ -357,6 +383,7 @@ class AlertAnalyticsView(APIView):
         if date_to:
             qs = qs.filter(timestamp__lte=date_to)
 
+        # Determine time grouping function (hour/day/week)
         group_by = request.query_params.get('group_by', 'day')
         trunc_fn = {'hour': TruncHour, 'day': TruncDay, 'week': TruncWeek}.get(group_by, TruncDay)
 
@@ -446,6 +473,13 @@ class LogUploadView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
+        """
+        Parse an uploaded CSV or JSON file and create Alert records.
+
+        Supports CSV with headers matching Alert field names, or JSON
+        as an array of objects or { "records": [...] }. Tracks import
+        progress and errors in a LogUpload record.
+        """
         import csv
         import json
         import io

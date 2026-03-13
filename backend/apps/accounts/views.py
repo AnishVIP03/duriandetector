@@ -29,11 +29,12 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
+        """Validate registration data, create the user, and return JWT tokens."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Generate JWT tokens
+        # Generate JWT tokens for immediate login after registration
         refresh = RefreshToken.for_user(user)
 
         return Response({
@@ -51,6 +52,7 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        """Authenticate user credentials and return JWT access/refresh tokens."""
         from django.conf import settings
 
         # In demo mode, authenticate across all tier databases
@@ -121,6 +123,7 @@ class LoginView(APIView):
         })
 
     def _get_client_ip(self, request):
+        """Extract the client's real IP, respecting X-Forwarded-For from proxies."""
         x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded:
             return x_forwarded.split(',')[0].strip()
@@ -132,6 +135,7 @@ class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        """Blacklist the provided refresh token to invalidate the session."""
         try:
             refresh_token = request.data.get('refresh')
             if refresh_token:
@@ -148,6 +152,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
+        """Return the currently authenticated user."""
         return self.request.user
 
 

@@ -1,5 +1,10 @@
 /**
  * Login page — US-05.
+ *
+ * Provides email/password authentication form. On successful login,
+ * stores JWT tokens and user data in the auth store (Zustand) and
+ * redirects to the main dashboard. Displays server-side validation
+ * errors via toast notifications.
  */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -12,22 +17,25 @@ import { useAuthStore } from '../../store/authStore';
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
-  const { login } = useAuthStore();
+  const { login } = useAuthStore();  // Zustand action to persist user + tokens
   const navigate = useNavigate();
 
+  /** Update form state as user types in email/password fields. */
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  /** Submit login credentials to the API, store tokens on success. */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const { data } = await authAPI.login(form);
-      login(data.user, data.tokens);
+      login(data.user, data.tokens);  // Persist auth state
       toast.success('Welcome back!');
       navigate('/dashboard');
     } catch (err) {
+      // Extract the most specific error message from the API response
       const msg = err.response?.data?.non_field_errors?.[0]
         || err.response?.data?.detail
         || 'Login failed. Check your credentials.';
