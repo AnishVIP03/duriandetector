@@ -12,4 +12,7 @@ export const environmentsAPI = {
   inviteMember: (envId, data) => client.post(`/environments/${envId}/invite/`, data),
   removeMember: (envId, userId) => client.delete(`/environments/${envId}/members/${userId}/`),
   regenerateInvite: (envId) => client.post(`/environments/${envId}/regenerate-invite/`),
+  // Admin
+  adminListAll: (params = {}) => client.get('/environments/admin/all/', { params }),
+  adminGetDetail: (id) => client.get(`/environments/admin/${id}/`),
 };

@@ -61,3 +61,28 @@ class InviteMemberSerializer(serializers.Serializer):
         choices=EnvironmentMembership.MemberRole.choices,
         default=EnvironmentMembership.MemberRole.MEMBER,
     )
+
+
+class AdminEnvironmentSerializer(serializers.ModelSerializer):
+    """Serializer for admin viewing all environments."""
+    owner_email = serializers.CharField(source='owner.email', read_only=True)
+    owner_name = serializers.SerializerMethodField()
+    member_count = serializers.SerializerMethodField()
+    alert_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Environment
+        fields = [
+            'id', 'name', 'description', 'organisation', 'owner',
+            'owner_email', 'owner_name', 'pin', 'invitation_code',
+            'created_at', 'member_count', 'alert_count',
+        ]
+
+    def get_owner_name(self, obj):
+        return f"{obj.owner.first_name} {obj.owner.last_name}".strip() or obj.owner.email
+
+    def get_member_count(self, obj):
+        return obj.memberships.count()
+
+    def get_alert_count(self, obj):
+        return obj.alerts.count()

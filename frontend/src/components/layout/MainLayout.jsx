@@ -10,7 +10,8 @@ import {
   FileText, Settings, Users, CreditCard,
   Activity, Brain, Globe, Crosshair,
   MessageSquare, LogOut, Menu, X, ChevronDown,
-  Network, BookOpen, Zap, UserCog, ClipboardList, Play, Lock
+  Network, BookOpen, Zap, UserCog, ClipboardList, Play, Lock,
+  ShieldCheck, Filter, Upload, BarChart3, ShieldOff
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authAPI } from '../../api/auth';
@@ -23,6 +24,11 @@ const navItems = [
   { label: 'Alerts', path: '/alerts', icon: Bell },
   { label: 'GeoIP Map', path: '/alerts/map', icon: Globe },
   { label: 'Threats', path: '/threats', icon: AlertTriangle },
+  { label: 'Block List', path: '/blocked-ips', icon: ShieldOff },
+  { label: 'Whitelist', path: '/whitelist', icon: ShieldCheck },
+  { label: 'Traffic Filters', path: '/traffic-filters', icon: Filter },
+  { label: 'Log Ingestion', path: '/log-ingestion', icon: Upload },
+  { label: 'Visualization', path: '/analytics', icon: BarChart3 },
   { label: 'Incidents', path: '/incidents', icon: Crosshair, requiredTier: 'premium' },
   { label: 'ML Config', path: '/ml-config', icon: Brain, requiredTier: 'premium' },
   { label: 'System', path: '/system', icon: Activity, requiredTier: 'premium' },
@@ -42,6 +48,7 @@ const wowItems = [
 
 const adminItems = [
   { label: 'User Management', path: '/admin/users', icon: UserCog },
+  { label: 'Teams', path: '/admin/teams', icon: Users },
   { label: 'Audit Logs', path: '/admin/audit', icon: ClipboardList },
   { label: 'System Health', path: '/admin/health', icon: Activity },
 ];

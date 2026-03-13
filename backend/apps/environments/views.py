@@ -5,6 +5,7 @@ from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from django.db import models as db_models
 
 from .models import Environment, EnvironmentMembership
 from .serializers import (
@@ -13,8 +14,10 @@ from .serializers import (
     JoinEnvironmentSerializer,
     MembershipSerializer,
     InviteMemberSerializer,
+    AdminEnvironmentSerializer,
 )
 from apps.accounts.models import CustomUser
+from apps.accounts.permissions import IsAdmin
 
 
 class CreateEnvironmentView(generics.CreateAPIView):
@@ -202,4 +205,34 @@ class RegenerateInviteView(APIView):
         return Response({
             'message': 'Invitation code regenerated.',
             'invitation_code': str(new_code),
+        })
+
+
+class AdminAllEnvironmentsView(generics.ListAPIView):
+    """Admin view: list ALL environments across the system."""
+    serializer_class = AdminEnvironmentSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        qs = Environment.objects.select_related('owner').all()
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                db_models.Q(name__icontains=search) | db_models.Q(organisation__icontains=search)
+            )
+        return qs
+
+
+class AdminEnvironmentDetailView(APIView):
+    """Admin view: get environment detail with full member list."""
+    permission_classes = [IsAdmin]
+
+    def get(self, request, pk):
+        env = get_object_or_404(Environment, id=pk)
+        members = EnvironmentMembership.objects.filter(
+            environment=env
+        ).select_related('user')
+        return Response({
+            'environment': AdminEnvironmentSerializer(env).data,
+            'members': MembershipSerializer(members, many=True).data,
         })

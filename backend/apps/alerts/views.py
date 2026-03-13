@@ -5,16 +5,20 @@ Full CRUD, filtering, blocking, and GeoIP aggregation.
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
 from django.db.models import Count, Q
 
-from .models import Alert, BlockedIP
+from .models import Alert, BlockedIP, WhitelistedIP, TrafficFilterRule, LogUpload
 from .serializers import (
     AlertListSerializer,
     AlertDetailSerializer,
     GeoIPAlertSerializer,
     BlockedIPSerializer,
     BlockIPActionSerializer,
+    WhitelistedIPSerializer,
+    TrafficFilterRuleSerializer,
+    LogUploadSerializer,
 )
 from apps.environments.models import EnvironmentMembership
 
@@ -256,3 +260,293 @@ class DashboardStatsView(APIView):
             'top_source_ips': list(top_ips),
             'capture_running': capture_running,
         })
+
+
+# ── Feature 1: Block Control List ──
+
+class BlockedIPListView(generics.ListAPIView):
+    """List all blocked IPs for the user's environment."""
+    serializer_class = BlockedIPSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        env = _get_user_environment(self.request.user)
+        if not env:
+            return BlockedIP.objects.none()
+        qs = BlockedIP.objects.filter(environment=env)
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active.lower() == 'true')
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(ip_address__icontains=search)
+        return qs
+
+
+class UnblockIPByIdView(APIView):
+    """Unblock a blocked IP by its BlockedIP ID."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        env = _get_user_environment(request.user)
+        if not env:
+            return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            blocked = BlockedIP.objects.get(id=pk, environment=env)
+        except BlockedIP.DoesNotExist:
+            return Response({'error': 'Blocked IP not found.'}, status=status.HTTP_404_NOT_FOUND)
+        blocked.is_active = False
+        blocked.unblocked_at = timezone.now()
+        blocked.save(update_fields=['is_active', 'unblocked_at'])
+        Alert.objects.filter(
+            environment=env, src_ip=blocked.ip_address
+        ).update(is_blocked=False, blocked_at=None, blocked_by=None)
+        return Response({'message': f'IP {blocked.ip_address} has been unblocked.'})
+
+
+# ── Feature 3: IP Whitelist ──
+
+class WhitelistedIPListCreateView(generics.ListCreateAPIView):
+    """List and add whitelisted IPs."""
+    serializer_class = WhitelistedIPSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        env = _get_user_environment(self.request.user)
+        if not env:
+            return WhitelistedIP.objects.none()
+        return WhitelistedIP.objects.filter(environment=env, is_active=True)
+
+    def perform_create(self, serializer):
+        env = _get_user_environment(self.request.user)
+        serializer.save(added_by=self.request.user, environment=env)
+
+
+class WhitelistedIPDeleteView(generics.DestroyAPIView):
+    """Remove an IP from the whitelist."""
+    serializer_class = WhitelistedIPSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        env = _get_user_environment(self.request.user)
+        if not env:
+            return WhitelistedIP.objects.none()
+        return WhitelistedIP.objects.filter(environment=env)
+
+
+# ── Feature 4: Alert Analytics ──
+
+class AlertAnalyticsView(APIView):
+    """Analytics endpoint for custom visualizations."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models.functions import TruncHour, TruncDay, TruncWeek
+        from django.db.models import Avg
+
+        env = _get_user_environment(request.user)
+        if not env:
+            return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = Alert.objects.filter(environment=env)
+
+        date_from = request.query_params.get('date_from')
+        if date_from:
+            qs = qs.filter(timestamp__gte=date_from)
+        date_to = request.query_params.get('date_to')
+        if date_to:
+            qs = qs.filter(timestamp__lte=date_to)
+
+        group_by = request.query_params.get('group_by', 'day')
+        trunc_fn = {'hour': TruncHour, 'day': TruncDay, 'week': TruncWeek}.get(group_by, TruncDay)
+
+        breakdown_by = request.query_params.get('breakdown_by')
+
+        if breakdown_by and breakdown_by in ('severity', 'alert_type', 'protocol', 'country'):
+            data = qs.annotate(
+                period=trunc_fn('timestamp')
+            ).values('period', breakdown_by).annotate(
+                count=Count('id'),
+                avg_confidence=Avg('confidence_score'),
+            ).order_by('period')
+        else:
+            data = qs.annotate(
+                period=trunc_fn('timestamp')
+            ).values('period').annotate(
+                count=Count('id'),
+                avg_confidence=Avg('confidence_score'),
+            ).order_by('period')
+
+        results = []
+        for row in data:
+            item = {
+                'period': row['period'].isoformat() if row['period'] else None,
+                'count': row['count'],
+                'avg_confidence': round(row['avg_confidence'] or 0, 3),
+            }
+            if breakdown_by:
+                item[breakdown_by] = row.get(breakdown_by, '')
+            results.append(item)
+
+        return Response({'data': results, 'group_by': group_by, 'breakdown_by': breakdown_by})
+
+
+# ── Feature 5: Traffic Filter Rules ──
+
+class TrafficFilterRuleListCreateView(generics.ListCreateAPIView):
+    """List and create traffic filter rules."""
+    serializer_class = TrafficFilterRuleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        env = _get_user_environment(self.request.user)
+        if not env:
+            return TrafficFilterRule.objects.none()
+        return TrafficFilterRule.objects.filter(environment=env)
+
+    def perform_create(self, serializer):
+        env = _get_user_environment(self.request.user)
+        serializer.save(created_by=self.request.user, environment=env)
+
+
+class TrafficFilterRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a traffic filter rule."""
+    serializer_class = TrafficFilterRuleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        env = _get_user_environment(self.request.user)
+        if not env:
+            return TrafficFilterRule.objects.none()
+        return TrafficFilterRule.objects.filter(environment=env)
+
+
+class TrafficFilterRuleToggleView(APIView):
+    """Toggle a traffic filter rule active/inactive."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        env = _get_user_environment(request.user)
+        if not env:
+            return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            rule = TrafficFilterRule.objects.get(id=pk, environment=env)
+        except TrafficFilterRule.DoesNotExist:
+            return Response({'error': 'Rule not found.'}, status=status.HTTP_404_NOT_FOUND)
+        rule.is_active = not rule.is_active
+        rule.save(update_fields=['is_active'])
+        return Response(TrafficFilterRuleSerializer(rule).data)
+
+
+# ── Feature 6: Log Ingestion ──
+
+class LogUploadView(APIView):
+    """Upload CSV or JSON log files to create alerts."""
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        import csv
+        import json
+        import io
+
+        env = _get_user_environment(request.user)
+        if not env:
+            return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        file_name = file.name
+        if file_name.endswith('.csv'):
+            file_format = 'csv'
+        elif file_name.endswith('.json'):
+            file_format = 'json'
+        else:
+            return Response({'error': 'Unsupported file format. Use CSV or JSON.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        upload = LogUpload.objects.create(
+            environment=env,
+            uploaded_by=request.user,
+            file_name=file_name,
+            file_format=file_format,
+            status='processing',
+        )
+
+        try:
+            content = file.read().decode('utf-8')
+            records = []
+
+            if file_format == 'csv':
+                reader = csv.DictReader(io.StringIO(content))
+                for row in reader:
+                    records.append(row)
+            else:
+                parsed = json.loads(content)
+                if isinstance(parsed, list):
+                    records = parsed
+                elif isinstance(parsed, dict) and 'records' in parsed:
+                    records = parsed['records']
+                else:
+                    records = [parsed]
+
+            upload.records_total = len(records)
+            imported = 0
+            failed = 0
+            errors = []
+
+            for i, record in enumerate(records):
+                try:
+                    Alert.objects.create(
+                        environment=env,
+                        src_ip=record.get('src_ip', '0.0.0.0'),
+                        dst_ip=record.get('dst_ip', '0.0.0.0'),
+                        src_port=int(record.get('src_port', 0)) or None,
+                        dst_port=int(record.get('dst_port', 0)) or None,
+                        protocol=record.get('protocol', 'TCP'),
+                        alert_type=record.get('alert_type', 'other'),
+                        severity=record.get('severity', 'low'),
+                        confidence_score=float(record.get('confidence_score', 0.5)),
+                        raw_payload=record.get('raw_payload', ''),
+                        country=record.get('country', ''),
+                        city=record.get('city', ''),
+                        latitude=float(record['latitude']) if record.get('latitude') else None,
+                        longitude=float(record['longitude']) if record.get('longitude') else None,
+                        mitre_tactic=record.get('mitre_tactic', ''),
+                        mitre_technique_id=record.get('mitre_technique_id', ''),
+                    )
+                    imported += 1
+                except Exception as e:
+                    failed += 1
+                    if len(errors) < 5:
+                        errors.append(f"Row {i + 1}: {str(e)}")
+
+            upload.records_imported = imported
+            upload.records_failed = failed
+            upload.status = 'completed'
+            upload.error_message = '\n'.join(errors)
+            upload.save()
+
+            return Response({
+                'message': f'Imported {imported} of {len(records)} records.',
+                'upload': LogUploadSerializer(upload).data,
+            })
+
+        except Exception as e:
+            upload.status = 'failed'
+            upload.error_message = str(e)
+            upload.save()
+            return Response({'error': f'Failed to parse file: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LogUploadHistoryView(generics.ListAPIView):
+    """List past log uploads."""
+    serializer_class = LogUploadSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        env = _get_user_environment(self.request.user)
+        if not env:
+            return LogUpload.objects.none()
+        return LogUpload.objects.filter(environment=env)

@@ -48,6 +48,14 @@ import AttackChainPage from './pages/attacks/AttackChainPage';
 import PacketInspectorPage from './pages/packets/PacketInspectorPage';
 import DemoPage from './pages/demo/DemoPage';
 
+// Pages — Phase 6 (Feedback Features)
+import BlockedIPsPage from './pages/alerts/BlockedIPsPage';
+import WhitelistPage from './pages/alerts/WhitelistPage';
+import TrafficFilterPage from './pages/alerts/TrafficFilterPage';
+import LogIngestionPage from './pages/alerts/LogIngestionPage';
+import CustomVisualizationPage from './pages/analytics/CustomVisualizationPage';
+import AdminTeamsPage from './pages/admin/AdminTeamsPage';
+
 /**
  * Protected route wrapper.
  * Redirects to login if user is not authenticated.
@@ -148,6 +156,11 @@ export default function App() {
         <Route path="/chatbot" element={<ChatbotPage />} />
         <Route path="/subscription" element={<SubscriptionPage />} />
         <Route path="/demo" element={<DemoPage />} />
+        <Route path="/blocked-ips" element={<BlockedIPsPage />} />
+        <Route path="/whitelist" element={<WhitelistPage />} />
+        <Route path="/traffic-filters" element={<TrafficFilterPage />} />
+        <Route path="/log-ingestion" element={<LogIngestionPage />} />
+        <Route path="/analytics" element={<CustomVisualizationPage />} />
 
         {/* Premium tier — requires premium subscription or above */}
         <Route path="/incidents" element={<TierGate requiredTier="premium" featureName="Incident Management"><IncidentListPage /></TierGate>} />
@@ -166,6 +179,7 @@ export default function App() {
         <Route path="/admin/users" element={<AdminUsersPage />} />
         <Route path="/admin/audit" element={<AdminAuditPage />} />
         <Route path="/admin/health" element={<AdminHealthPage />} />
+        <Route path="/admin/teams" element={<AdminTeamsPage />} />
       </Route>
 
       {/* Catch-all */}

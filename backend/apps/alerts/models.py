@@ -96,3 +96,107 @@ class BlockedIP(models.Model):
 
     def __str__(self):
         return f"{self.ip_address} (blocked by {self.blocked_by})"
+
+
+class WhitelistedIP(models.Model):
+    """An IP address whitelisted to suppress false-positive alerts."""
+
+    ip_address = models.GenericIPAddressField()
+    environment = models.ForeignKey(
+        'environments.Environment',
+        on_delete=models.CASCADE,
+        related_name='whitelisted_ips',
+    )
+    added_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='whitelisted_ips',
+    )
+    reason = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['ip_address', 'environment']
+
+    def __str__(self):
+        return f"{self.ip_address} (whitelisted)"
+
+
+class TrafficFilterRule(models.Model):
+    """Saved traffic filter rules for auto-categorising alerts."""
+
+    class FilterType(models.TextChoices):
+        IP_RANGE = 'ip_range', 'IP Range'
+        PORT_RANGE = 'port_range', 'Port Range'
+        PROTOCOL = 'protocol', 'Protocol'
+        COUNTRY = 'country', 'Country'
+        ALERT_TYPE = 'alert_type', 'Alert Type'
+
+    class Action(models.TextChoices):
+        SUPPRESS = 'suppress', 'Suppress'
+        HIGHLIGHT = 'highlight', 'Highlight'
+        AUTO_BLOCK = 'auto_block', 'Auto Block'
+
+    environment = models.ForeignKey(
+        'environments.Environment',
+        on_delete=models.CASCADE,
+        related_name='traffic_filters',
+    )
+    name = models.CharField(max_length=200)
+    filter_type = models.CharField(max_length=20, choices=FilterType.choices)
+    value = models.CharField(max_length=500)
+    action = models.CharField(max_length=20, choices=Action.choices)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='traffic_filters',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} ({self.filter_type}: {self.value})"
+
+
+class LogUpload(models.Model):
+    """Record of a CSV/JSON log file upload."""
+
+    class FileFormat(models.TextChoices):
+        CSV = 'csv', 'CSV'
+        JSON = 'json', 'JSON'
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        PROCESSING = 'processing', 'Processing'
+        COMPLETED = 'completed', 'Completed'
+        FAILED = 'failed', 'Failed'
+
+    environment = models.ForeignKey(
+        'environments.Environment',
+        on_delete=models.CASCADE,
+        related_name='log_uploads',
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='log_uploads',
+    )
+    file_name = models.CharField(max_length=500)
+    file_format = models.CharField(max_length=10, choices=FileFormat.choices)
+    records_total = models.IntegerField(default=0)
+    records_imported = models.IntegerField(default=0)
+    records_failed = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    error_message = models.TextField(blank=True, default='')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.file_name} ({self.status})"

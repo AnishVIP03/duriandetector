@@ -15,4 +15,7 @@ urlpatterns = [
     path('<int:env_id>/invite/', views.InviteMemberView.as_view(), name='invite'),
     path('<int:env_id>/members/<int:user_id>/', views.RemoveMemberView.as_view(), name='remove-member'),
     path('<int:env_id>/regenerate-invite/', views.RegenerateInviteView.as_view(), name='regenerate-invite'),
+    # Admin
+    path('admin/all/', views.AdminAllEnvironmentsView.as_view(), name='admin-all'),
+    path('admin/<int:pk>/', views.AdminEnvironmentDetailView.as_view(), name='admin-detail'),
 ]

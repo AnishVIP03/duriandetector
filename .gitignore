@@ -44,3 +44,4 @@ ml_models/
 # Reports
 reports/*.pdf
 .claude/
+.vite/
