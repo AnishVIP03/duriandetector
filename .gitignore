@@ -41,6 +41,9 @@ frontend/build/
 *.joblib
 ml_models/
 
+# Redis
+dump.rdb
+
 # Reports
 reports/*.pdf
 .claude/

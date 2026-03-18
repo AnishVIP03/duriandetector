@@ -26,7 +26,11 @@ echo -e "${NC}"
 # Cleanup function — kill all child processes on exit
 cleanup() {
     echo -e "\n${YELLOW}Shutting down DurianDetector...${NC}"
-    kill $REDIS_PID $CELERY_PID $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    kill $REDIS_PID $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    # Celery runs as root on macOS, needs sudo to kill
+    if [ -n "$CELERY_PID" ]; then
+        sudo kill $CELERY_PID 2>/dev/null
+    fi
     echo -e "${GREEN}All processes stopped. Goodbye!${NC}"
     exit 0
 }
@@ -71,21 +75,17 @@ if ! $PYTHON -c "import django" 2>/dev/null; then
 fi
 echo -e "  ✓ Backend dependencies ready"
 
-# ─── Run migrations (with 30s timeout) ───
+# ─── Run migrations ───
 echo -e "${BLUE}[4/6]${NC} Running database migrations..."
 cd "$BACKEND_DIR"
-$PYTHON manage.py migrate --run-syncdb -v 0 2>/dev/null &
-MIGRATE_PID=$!
-for i in $(seq 1 30); do
-    if ! kill -0 $MIGRATE_PID 2>/dev/null; then break; fi
-    sleep 1
+MIGRATE_OK=true
+for DB in default free_db premium_db exclusive_db; do
+    $PYTHON manage.py migrate --database=$DB -v 0 2>/dev/null || MIGRATE_OK=false
 done
-if kill -0 $MIGRATE_PID 2>/dev/null; then
-    echo -e "  ${YELLOW}Migration slow, skipping (DB already exists)${NC}"
-    kill $MIGRATE_PID 2>/dev/null
-    wait $MIGRATE_PID 2>/dev/null
+if [ "$MIGRATE_OK" = true ]; then
+    echo -e "  ✓ All databases ready"
 else
-    echo -e "  ✓ Database ready"
+    echo -e "  ${YELLOW}Some migrations had issues (databases may already be up to date)${NC}"
 fi
 
 # ─── Install frontend deps if needed ───
@@ -132,15 +132,30 @@ echo ""
 
 # Start Django backend
 cd "$BACKEND_DIR"
-$PYTHON manage.py runserver 8000 &
+daphne -b 127.0.0.1 -p 8000 config.asgi:application &
 BACKEND_PID=$!
 echo -e "  ${GREEN}✓${NC} Backend  → ${BOLD}http://127.0.0.1:8000${NC}  (PID: $BACKEND_PID)"
 
-# Start Celery worker
+# Start Celery worker (with sudo for packet capture on macOS)
 cd "$BACKEND_DIR"
-celery -A config worker --loglevel=warning > /dev/null 2>&1 &
-CELERY_PID=$!
-echo -e "  ${GREEN}✓${NC} Celery   → Worker started (PID: $CELERY_PID)"
+CELERY_BIN="$(which celery)"
+if [ "$(uname)" = "Darwin" ]; then
+    echo -e "  ${YELLOW}Celery needs sudo for packet capture on macOS...${NC}"
+    # Cache sudo credentials first (prompts for password in foreground)
+    sudo -v
+    sudo -E "$CELERY_BIN" -A config worker --loglevel=info > /tmp/celery.log 2>&1 &
+    CELERY_PID=$!
+else
+    celery -A config worker --loglevel=info > /tmp/celery.log 2>&1 &
+    CELERY_PID=$!
+fi
+sleep 3
+# Verify Celery actually started
+if kill -0 $CELERY_PID 2>/dev/null; then
+    echo -e "  ${GREEN}✓${NC} Celery   → Worker started (PID: $CELERY_PID)"
+else
+    echo -e "  ${RED}✗${NC} Celery   → Failed to start (check /tmp/celery.log)"
+fi
 
 # Start Vite frontend
 cd "$FRONTEND_DIR"
@@ -148,13 +163,47 @@ npm run dev -- --port 5173 &
 FRONTEND_PID=$!
 echo -e "  ${GREEN}✓${NC} Frontend → ${BOLD}http://localhost:5173${NC}   (PID: $FRONTEND_PID)"
 
+# ─── Seed data and setup (runs in background) ───
+cd "$BACKEND_DIR"
+$PYTHON manage.py setup_admin 2>/dev/null
+$PYTHON manage.py seed_mitre > /dev/null 2>&1 &
+
+# ─── Auto-start capture after Django is ready ───
+IFACE="en0"
+if [ "$(uname)" != "Darwin" ]; then IFACE="eth0"; fi
+(
+    # Wait for Django to be ready
+    for i in $(seq 1 30); do
+        if curl -s http://127.0.0.1:8000/api/auth/login/ > /dev/null 2>&1; then break; fi
+        sleep 2
+    done
+    # Login and start capture
+    TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/auth/login/ \
+        -H "Content-Type: application/json" \
+        -d '{"email":"admin@ids.local","password":"admin123"}' 2>/dev/null | \
+        $PYTHON -c "import sys,json; print(json.load(sys.stdin).get('tokens',{}).get('access',''))" 2>/dev/null)
+    if [ -n "$TOKEN" ] && [ "$TOKEN" != "" ]; then
+        curl -s -X POST http://127.0.0.1:8000/api/capture/start/ \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $TOKEN" \
+            -d "{\"interface\":\"$IFACE\"}" > /dev/null 2>&1
+    fi
+) &
+echo -e "  ${GREEN}✓${NC} Background setup (MITRE, environment, auto-capture)..."
+
 echo ""
 echo -e "${GREEN}${BOLD}═══════════════════════════════════════════════${NC}"
 echo -e "${GREEN}${BOLD}  DurianDetector is running!${NC}"
 echo -e "${GREEN}${BOLD}  Open: ${BLUE}http://localhost:5173${NC}"
 echo -e "${GREEN}${BOLD}═══════════════════════════════════════════════${NC}"
 echo ""
-echo -e "  Admin login: ${BOLD}admin@ids.local${NC} / ${BOLD}admin123${NC}"
+echo -e "  ${BOLD}Demo Accounts:${NC}"
+echo -e "  ──────────────────────────────────────────"
+echo -e "  Admin:     ${BOLD}admin@ids.local${NC}      / ${BOLD}admin123${NC}"
+echo -e "  Free:      ${BOLD}free@demo.local${NC}      / ${BOLD}demo123${NC}"
+echo -e "  Premium:   ${BOLD}premium@demo.local${NC}   / ${BOLD}demo123${NC}"
+echo -e "  Exclusive: ${BOLD}exclusive@demo.local${NC} / ${BOLD}demo123${NC}"
+echo -e "  ──────────────────────────────────────────"
 echo -e "  Press ${RED}Ctrl+C${NC} to stop all servers"
 echo ""
 

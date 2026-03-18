@@ -29,7 +29,7 @@ class CaptureSessionSerializer(serializers.ModelSerializer):
 
 
 class StartCaptureSerializer(serializers.Serializer):
-    interface = serializers.CharField(default='eth0', required=False)
+    interface = serializers.CharField(required=False, allow_blank=True, default='')
     duration = serializers.IntegerField(default=300, min_value=10, max_value=3600, required=False)
     packet_count = serializers.IntegerField(default=0, min_value=0, required=False)
 

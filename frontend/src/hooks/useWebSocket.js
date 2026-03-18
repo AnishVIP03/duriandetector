@@ -14,6 +14,7 @@ export function useWebSocket(path, { onMessage, autoConnect = true } = {}) {
   const [lastMessage, setLastMessage] = useState(null);
   const { tokens } = useAuthStore();
   const reconnectTimeoutRef = useRef(null);
+  const reconnectAttemptRef = useRef(0);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -23,6 +24,7 @@ export function useWebSocket(path, { onMessage, autoConnect = true } = {}) {
 
     ws.onopen = () => {
       setIsConnected(true);
+      reconnectAttemptRef.current = 0;
       console.log(`WebSocket connected: ${path}`);
     };
 
@@ -38,15 +40,15 @@ export function useWebSocket(path, { onMessage, autoConnect = true } = {}) {
 
     ws.onclose = () => {
       setIsConnected(false);
-      // Auto-reconnect after 3 seconds
-      reconnectTimeoutRef.current = setTimeout(() => {
-        if (autoConnect) connect();
-      }, 3000);
+      if (autoConnect) {
+        const attempt = reconnectAttemptRef.current;
+        const delay = Math.min(3000 * Math.pow(2, attempt), 30000);
+        reconnectAttemptRef.current = attempt + 1;
+        reconnectTimeoutRef.current = setTimeout(() => connect(), delay);
+      }
     };
 
-    ws.onerror = (error) => {
-      console.error(`WebSocket error: ${path}`, error);
-    };
+    ws.onerror = () => {};
 
     wsRef.current = ws;
   }, [path, tokens?.access, onMessage, autoConnect]);

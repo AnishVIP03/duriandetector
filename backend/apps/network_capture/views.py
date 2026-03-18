@@ -48,7 +48,7 @@ class StartCaptureView(APIView):
         # Create capture session
         session = CaptureSession.objects.create(
             environment=env,
-            interface=serializer.validated_data.get('interface', env.network_interface),
+            interface=serializer.validated_data.get('interface') or env.network_interface,
             status='running',
             started_by=request.user,
         )
