@@ -1,0 +1,27 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>TrafficFilterPage
+    participant API1 as DRF<br/>TrafficFilterRuleListCreateView
+    participant API2 as DRF<br/>TrafficFilterRuleToggleView
+    participant SER as TrafficFilterRuleSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to Traffic Filters page
+    FE->>API1: GET /api/traffic-filters/
+    API1->>DB: TrafficFilterRule.objects.filter(environment=env)
+    DB-->>API1: QuerySet[TrafficFilterRule]
+    API1-->>FE: 200 OK {rules: [...]}
+    FE-->>U: Display filter rules table
+    U->>FE: Fill new rule form (type, pattern, action)
+    FE->>API1: POST /api/traffic-filters/ {filter_type: "ip_range", pattern, action: "auto_block"}
+    API1->>SER: TrafficFilterRuleSerializer.validate(data)
+    API1->>DB: TrafficFilterRule.objects.create(...)
+    DB-->>API1: Rule created
+    API1-->>FE: 201 Created {rule}
+    FE-->>U: New rule added to table
+    U->>FE: Toggle rule on/off
+    FE->>API2: POST /api/traffic-filters/{id}/toggle/
+    API2->>DB: rule.is_active = not rule.is_active
+    API2->>DB: rule.save()
+    API2-->>FE: 200 OK {is_active: false}
+    FE-->>U: Rule toggle updated

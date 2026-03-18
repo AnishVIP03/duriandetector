@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> NoSearch
+    NoSearch --> Searching : Enter query
+    Searching --> ResultsDisplayed : Results found
+    Searching --> NoResults : No matches
+    ResultsDisplayed --> UserSelected : Click user
+    UserSelected --> ResultsDisplayed : Back
+    NoResults --> Searching : New query
+    ResultsDisplayed --> [*]

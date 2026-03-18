@@ -1,0 +1,18 @@
+sequenceDiagram
+    actor U as Exclusive User
+    participant FE as React<br/>TeamPage
+    participant API as DRF<br/>EnvironmentMembersView
+    participant SER as MembershipSerializer
+    participant Perm as IsExclusiveOrAbove
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to Team page
+    FE->>API: GET /api/environments/{env_id}/members/
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed (Exclusive tier)
+    API->>DB: EnvironmentMembership.objects.filter(environment=env)
+    DB-->>API: QuerySet[EnvironmentMembership]
+    API->>SER: MembershipSerializer(members, many=True)
+    SER-->>API: Serialized member list with roles
+    API-->>FE: 200 OK {members: [{user, role, joined_at}, ...]}
+    FE-->>U: Display team members table with roles

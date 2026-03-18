@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> DefaultView
+    DefaultView --> Configuring : Select options
+    Configuring --> Loading : Fetch data
+    Loading --> ChartRendered : Data received
+    ChartRendered --> Configuring : Adjust parameters
+    ChartRendered --> PresetApplied : Quick preset
+    PresetApplied --> Loading : Fetch new data
+    ChartRendered --> [*]

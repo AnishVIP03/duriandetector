@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor A as Administrator
+    participant FE as React<br/>AdminUsersPage
+    participant API as Any Admin View
+    participant Audit as _log_admin_action()
+    participant Model as AuditLog Model
+    participant DB as PostgreSQL
+
+    A->>FE: Perform any admin action (suspend, reset, modify)
+    FE->>API: POST/PATCH admin endpoint
+    API->>API: Execute admin operation
+    API->>Audit: _log_admin_action(admin=request.user, action="suspend_user", target=user, details={reason})
+    Audit->>Model: AuditLog.objects.create(admin, action, target_user, target_type, details, ip_address, timestamp)
+    Model->>DB: INSERT INTO audit_auditlog (...)
+    DB-->>Model: AuditLog instance (immutable)
+    Audit-->>API: Log entry created
+    API-->>FE: Admin action response
+    FE-->>U: Action completed (audit logged transparently)
+    Note over A,DB: All admin actions are automatically<br/>logged without additional user interaction.<br/>Audit logs are immutable and<br/>cannot be modified or deleted.

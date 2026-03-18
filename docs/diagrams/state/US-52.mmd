@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> NoRule
+    NoRule --> Creating : New rule form
+    Creating --> Active : Rule created (enabled)
+    Active --> Inactive : Toggle off
+    Inactive --> Active : Toggle on
+    Active --> Deleted : Delete rule
+    Inactive --> Deleted : Delete rule
+    Deleted --> [*]

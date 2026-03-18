@@ -1,0 +1,6 @@
+graph LR
+    A((Free User)) --> UC1[Reset Password]
+    UC1 --> UC2[Request Reset Token]
+    UC1 --> UC3[Validate Token]
+    UC1 --> UC4[Set New Password]
+    UC2 --> UC5[Send Reset Email]

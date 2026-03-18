@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> OpenRegisterPage
+    OpenRegisterPage --> FillForm : Enter email, password, name
+    FillForm --> ValidateInput : Submit form
+    ValidateInput --> ShowValidationError : Invalid input
+    ShowValidationError --> FillForm
+    ValidateInput --> SendRequest : Valid input
+    SendRequest --> CreateUser : POST /api/accounts/register/
+    CreateUser --> DuplicateError : Email exists
+    DuplicateError --> FillForm
+    CreateUser --> UserCreated : Success
+    UserCreated --> RedirectLogin
+    RedirectLogin --> [*]

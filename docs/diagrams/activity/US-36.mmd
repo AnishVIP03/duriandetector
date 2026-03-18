@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> OpenChatbot
+    OpenChatbot --> TypeMessage
+    TypeMessage --> SendMessage : POST /api/chatbot/send/
+    SendMessage --> ClassifyIntent
+    ClassifyIntent --> HandleGreeting : Greeting detected
+    ClassifyIntent --> HandleSecurityQ : Security question
+    ClassifyIntent --> FallbackResponse : Unknown intent
+    HandleGreeting --> DisplayResponse
+    HandleSecurityQ --> RuleBasedLookup
+    RuleBasedLookup --> DisplayResponse
+    FallbackResponse --> DisplayResponse
+    DisplayResponse --> TypeMessage : Continue chat
+    DisplayResponse --> [*]

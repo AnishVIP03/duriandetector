@@ -1,0 +1,30 @@
+sequenceDiagram
+    actor A as Administrator
+    participant FE as React<br/>DemoPage
+    participant API1 as DRF<br/>DemoStartView
+    participant API2 as DRF<br/>DemoClearView
+    participant API3 as DRF<br/>DemoStatusView
+    participant Perm as IsAdmin
+    participant DB as PostgreSQL
+
+    A->>FE: Check demo status
+    FE->>API3: GET /api/demo/status/
+    API3->>DB: Alert.objects.filter(is_demo=True).exists()
+    DB-->>API3: Demo data status
+    API3-->>FE: 200 OK {has_demo_data: false}
+    A->>FE: Click "Start Demo" with scenario config
+    FE->>API1: POST /api/demo/start/
+    API1->>Perm: has_permission(request)
+    Perm-->>API1: Allowed (Admin)
+    API1->>API1: Generate ATTACK_PROFILES with SOURCE_IPS
+    API1->>DB: Bulk create demo Alert objects
+    API1->>API1: _fanout_demo_alerts() to all tier DBs
+    API1-->>FE: 200 OK {alerts_created: 50}
+    FE-->>U: Display demo summary
+    Note over A,FE: After demo showcase
+    A->>FE: Click "Clear Demo Data"
+    FE->>API2: POST /api/demo/clear/
+    API2->>DB: Alert.objects.filter(is_demo=True).delete()
+    DB-->>API2: Demo data cleared
+    API2-->>FE: 200 OK "Demo data cleared"
+    FE-->>U: Demo data removed confirmation

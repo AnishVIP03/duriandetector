@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> NavigateToAlerts
+    NavigateToAlerts --> FetchAlerts : GET /api/alerts/
+    FetchAlerts --> LoadingState
+    LoadingState --> DisplayAlertTable : Success
+    LoadingState --> ShowError : Failure
+    ShowError --> RetryFetch
+    RetryFetch --> FetchAlerts
+    DisplayAlertTable --> ViewAlertRow : Browse alerts
+    ViewAlertRow --> ClickAlert : Select alert
+    ClickAlert --> NavigateToDetail
+    NavigateToDetail --> [*]

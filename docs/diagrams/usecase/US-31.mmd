@@ -1,0 +1,6 @@
+graph LR
+    A((Administrator)) --> UC1[Suspend User]
+    A --> UC2[Unsuspend User]
+    UC1 --> UC3[Enter Reason]
+    UC1 --> UC4[Log Audit Trail]
+    UC2 --> UC4

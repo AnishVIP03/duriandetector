@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> OpenDashboard
+    OpenDashboard --> ConnectWebSocket : ws://host/ws/alerts/
+    ConnectWebSocket --> Listening
+    Listening --> AlertReceived : New alert broadcast
+    AlertReceived --> UpdateLiveFeed
+    UpdateLiveFeed --> ShowNotification
+    ShowNotification --> Listening
+    Listening --> ConnectionLost : Network error
+    ConnectionLost --> Reconnecting : Auto-reconnect
+    Reconnecting --> Listening : Reconnected
+    Listening --> UserLeaves : Navigate away
+    UserLeaves --> Disconnect
+    Disconnect --> [*]

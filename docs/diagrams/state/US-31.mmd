@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Active
+    Active --> Suspended : Admin suspends
+    Suspended --> Active : Admin unsuspends
+    Active --> [*]
+    Suspended --> [*]

@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> NavigateToAttackChains
+    NavigateToAttackChains --> FetchChains : GET /api/attack-chains/
+    FetchChains --> DisplayChainList
+    DisplayChainList --> SelectChain
+    SelectChain --> ShowKillChainTimeline
+    ShowKillChainTimeline --> ViewLinkedAlerts
+    ViewLinkedAlerts --> AnalyseProgression
+    AnalyseProgression --> [*]

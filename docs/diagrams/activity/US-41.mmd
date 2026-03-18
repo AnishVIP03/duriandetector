@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> NavigateToGlobe
+    NavigateToGlobe --> FetchGeoAlerts : GET /api/alerts/?has_geo=true
+    FetchGeoAlerts --> InitializeGlobe : react-globe.gl
+    InitializeGlobe --> PlotAttackArcs
+    PlotAttackArcs --> RenderGlobe
+    RenderGlobe --> RotateGlobe : Auto-rotation
+    RotateGlobe --> ClickArc : User clicks arc
+    ClickArc --> ShowAttackDetails
+    ShowAttackDetails --> RotateGlobe
+    RotateGlobe --> [*]

@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> ViewSubscription
+    ViewSubscription --> SelectTierChange : Upgrade or Downgrade
+    SelectTierChange --> InitiateCheckout : POST /api/subscriptions/checkout/
+    InitiateCheckout --> ProcessPayment
+    ProcessPayment --> UpdateRole
+    UpdateRole --> RefreshPermissions
+    RefreshPermissions --> [*]

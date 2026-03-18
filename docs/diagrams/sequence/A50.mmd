@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor A as Administrator
+    participant FE as React<br/>AdminUsersPage
+    participant API1 as DRF<br/>AdminSuspendUserView
+    participant API2 as DRF<br/>AdminUnsuspendUserView
+    participant Audit as _log_admin_action()
+    participant Perm as IsAdmin
+    participant DB as PostgreSQL
+
+    A->>FE: Click "Suspend" on user row
+    FE->>API1: POST /api/accounts/admin/users/{id}/suspend/ {reason}
+    API1->>Perm: has_permission(request)
+    Perm-->>API1: Allowed
+    API1->>DB: CustomUser.objects.get(pk=id)
+    DB-->>API1: User instance
+    API1->>DB: user.suspend(reason=reason)
+    DB-->>API1: User suspended
+    API1->>Audit: _log_admin_action(admin, "suspend_user", target_user)
+    Audit->>DB: AuditLog.objects.create(action, admin, target, reason)
+    API1-->>FE: 200 OK {user_id, is_suspended: true}
+    FE-->>U: User status updated to "Suspended"
+    Note over A,FE: Later, admin unsuspends
+    A->>FE: Click "Unsuspend" on user row
+    FE->>API2: POST /api/accounts/admin/users/{id}/unsuspend/
+    API2->>DB: user.unsuspend()
+    API2->>Audit: _log_admin_action(admin, "unsuspend_user", target_user)
+    Audit->>DB: AuditLog.objects.create(...)
+    API2-->>FE: 200 OK {user_id, is_suspended: false}
+    FE-->>U: User status updated to "Active"

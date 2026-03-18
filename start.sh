@@ -4,8 +4,6 @@
 #  FYP-26-S1-08
 # ═══════════════════════════════════════════════════════
 
-set -e
-
 # Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -25,18 +23,17 @@ echo "  ║       FYP-26-S1-08 Startup Script        ║"
 echo "  ╚══════════════════════════════════════════╝"
 echo -e "${NC}"
 
-# Cleanup function
+# Cleanup function — kill all child processes on exit
 cleanup() {
     echo -e "\n${YELLOW}Shutting down DurianDetector...${NC}"
-    kill $BACKEND_PID 2>/dev/null
-    kill $FRONTEND_PID 2>/dev/null
+    kill $REDIS_PID $CELERY_PID $BACKEND_PID $FRONTEND_PID 2>/dev/null
     echo -e "${GREEN}All processes stopped. Goodbye!${NC}"
     exit 0
 }
 trap cleanup SIGINT SIGTERM
 
 # ─── Check Python ───
-echo -e "${BLUE}[1/5]${NC} Checking Python..."
+echo -e "${BLUE}[1/6]${NC} Checking Python..."
 if command -v python3 &>/dev/null; then
     PYTHON=python3
 elif command -v python &>/dev/null; then
@@ -48,7 +45,7 @@ fi
 echo -e "  ✓ Using $($PYTHON --version)"
 
 # ─── Check Node ───
-echo -e "${BLUE}[2/5]${NC} Checking Node.js..."
+echo -e "${BLUE}[2/6]${NC} Checking Node.js..."
 if ! command -v node &>/dev/null; then
     echo -e "${RED}Node.js not found! Install Node.js 18+ first.${NC}"
     exit 1
@@ -56,7 +53,7 @@ fi
 echo -e "  ✓ Using Node $(node --version)"
 
 # ─── Install backend deps if needed ───
-echo -e "${BLUE}[3/5]${NC} Setting up backend..."
+echo -e "${BLUE}[3/6]${NC} Setting up backend..."
 if [ ! -d "$BACKEND_DIR/venv" ] && [ -z "$VIRTUAL_ENV" ]; then
     echo -e "  ${YELLOW}No virtualenv found. Creating one...${NC}"
     $PYTHON -m venv "$BACKEND_DIR/venv"
@@ -74,20 +71,57 @@ if ! $PYTHON -c "import django" 2>/dev/null; then
 fi
 echo -e "  ✓ Backend dependencies ready"
 
-# ─── Run migrations ───
-echo -e "${BLUE}[4/5]${NC} Running database migrations..."
+# ─── Run migrations (with 30s timeout) ───
+echo -e "${BLUE}[4/6]${NC} Running database migrations..."
 cd "$BACKEND_DIR"
-$PYTHON manage.py migrate --run-syncdb -v 0 2>/dev/null
-echo -e "  ✓ Database ready"
+$PYTHON manage.py migrate --run-syncdb -v 0 2>/dev/null &
+MIGRATE_PID=$!
+for i in $(seq 1 30); do
+    if ! kill -0 $MIGRATE_PID 2>/dev/null; then break; fi
+    sleep 1
+done
+if kill -0 $MIGRATE_PID 2>/dev/null; then
+    echo -e "  ${YELLOW}Migration slow, skipping (DB already exists)${NC}"
+    kill $MIGRATE_PID 2>/dev/null
+    wait $MIGRATE_PID 2>/dev/null
+else
+    echo -e "  ✓ Database ready"
+fi
 
 # ─── Install frontend deps if needed ───
-echo -e "${BLUE}[5/5]${NC} Setting up frontend..."
+echo -e "${BLUE}[5/6]${NC} Setting up frontend..."
 cd "$FRONTEND_DIR"
 if [ ! -d "node_modules" ]; then
     echo -e "  ${YELLOW}Installing npm dependencies (first time only)...${NC}"
     npm install --legacy-peer-deps 2>/dev/null
 fi
 echo -e "  ✓ Frontend dependencies ready"
+
+# ─── Start Redis ───
+echo -e "${BLUE}[6/6]${NC} Starting Redis..."
+if command -v /opt/homebrew/bin/redis-server &>/dev/null; then
+    REDIS_CMD="/opt/homebrew/bin/redis-server"
+elif command -v redis-server &>/dev/null; then
+    REDIS_CMD="redis-server"
+else
+    REDIS_CMD=""
+fi
+
+if [ -n "$REDIS_CMD" ]; then
+    # Check if Redis is already running
+    if /opt/homebrew/bin/redis-cli ping 2>/dev/null | grep -q PONG; then
+        echo -e "  ✓ Redis already running"
+        REDIS_PID=""
+    else
+        $REDIS_CMD --daemonize no --loglevel warning > /dev/null 2>&1 &
+        REDIS_PID=$!
+        sleep 1
+        echo -e "  ✓ Redis started (PID: $REDIS_PID)"
+    fi
+else
+    echo -e "  ${YELLOW}Redis not found, skipping (install: brew install redis)${NC}"
+    REDIS_PID=""
+fi
 
 # ═══════════════════════════════════════════════════════
 #  START SERVERS
@@ -101,6 +135,12 @@ cd "$BACKEND_DIR"
 $PYTHON manage.py runserver 8000 &
 BACKEND_PID=$!
 echo -e "  ${GREEN}✓${NC} Backend  → ${BOLD}http://127.0.0.1:8000${NC}  (PID: $BACKEND_PID)"
+
+# Start Celery worker
+cd "$BACKEND_DIR"
+celery -A config worker --loglevel=warning > /dev/null 2>&1 &
+CELERY_PID=$!
+echo -e "  ${GREEN}✓${NC} Celery   → Worker started (PID: $CELERY_PID)"
 
 # Start Vite frontend
 cd "$FRONTEND_DIR"
@@ -118,5 +158,5 @@ echo -e "  Admin login: ${BOLD}admin@ids.local${NC} / ${BOLD}admin123${NC}"
 echo -e "  Press ${RED}Ctrl+C${NC} to stop all servers"
 echo ""
 
-# Wait for both processes
+# Wait for all processes
 wait

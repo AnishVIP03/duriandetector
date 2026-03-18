@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing : Message sent
+    Processing --> ContextLoaded : Alerts fetched
+    ContextLoaded --> MITREMapped : Tactics mapped
+    MITREMapped --> ResponseReady : Response built
+    ResponseReady --> Idle : Awaiting next
+    ResponseReady --> [*]

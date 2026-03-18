@@ -1,0 +1,26 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>MitreHeatmapPage
+    participant API1 as DRF<br/>MitreHeatmapView
+    participant API2 as DRF<br/>MitreTechniqueDetailView
+    participant SER as MitreTechniqueSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to MITRE ATT&CK page
+    FE->>API1: GET /api/mitre/heatmap/
+    API1->>DB: MitreTactic.objects.prefetch_related("techniques")
+    API1->>DB: Alert.objects.values("mitre_technique").annotate(Count)
+    DB-->>API1: Tactics with technique alert counts
+    API1-->>FE: 200 OK {tactics: [{name, techniques: [{id, name, count}]}]}
+    FE->>FE: intensityColor(count) for each cell
+    FE->>FE: Legend() component
+    FE-->>U: Render ATT&CK heatmap matrix
+    U->>FE: Click technique cell
+    FE->>API2: GET /api/mitre/techniques/{technique_id}/
+    API2->>DB: MitreTechnique.objects.get(pk=id)
+    API2->>DB: Alert.objects.filter(mitre_technique=id)[:5]
+    DB-->>API2: Technique + recent alerts
+    API2->>SER: MitreTechniqueSerializer(technique)
+    API2-->>FE: 200 OK {technique detail + recent alerts}
+    FE->>FE: TechniqueDetailPanel(data)
+    FE-->>U: Display technique details and related alerts

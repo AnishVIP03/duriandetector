@@ -134,10 +134,18 @@ class TrafficFilterRule(models.Model):
         COUNTRY = 'country', 'Country'
         ALERT_TYPE = 'alert_type', 'Alert Type'
 
+    class TrafficCategory(models.TextChoices):
+        VOLUME = 'volume', 'Volume-based'
+        LOGIN = 'login', 'Login-based'
+        DOMAIN = 'domain', 'Domain-based'
+        CUSTOM = 'custom', 'Custom'
+
     class Action(models.TextChoices):
         SUPPRESS = 'suppress', 'Suppress'
         HIGHLIGHT = 'highlight', 'Highlight'
         AUTO_BLOCK = 'auto_block', 'Auto Block'
+        ALERT_ONLY = 'alert_only', 'Alert Only'
+        AUTO_BLOCK_TIMED = 'auto_block_timed', 'Auto-Block for 1 Hour'
 
     environment = models.ForeignKey(
         'environments.Environment',
@@ -148,6 +156,19 @@ class TrafficFilterRule(models.Model):
     filter_type = models.CharField(max_length=20, choices=FilterType.choices)
     value = models.CharField(max_length=500)
     action = models.CharField(max_length=20, choices=Action.choices)
+    # Traffic category and threshold fields — US-52
+    traffic_category = models.CharField(
+        max_length=20, choices=TrafficCategory.choices,
+        default='custom', blank=True,
+    )
+    threshold_count = models.IntegerField(
+        null=True, blank=True,
+        help_text='Number of events to trigger (e.g., 500 requests).',
+    )
+    threshold_window_seconds = models.IntegerField(
+        null=True, blank=True,
+        help_text='Time window in seconds (e.g., 60 for per-minute).',
+    )
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

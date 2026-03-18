@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NoNotes
+    NoNotes --> Drafting : Click add note
+    Drafting --> Saved : Submit note
+    Saved --> NoNotes : View notes list
+    Saved --> Drafting : Add another
+    Saved --> [*]

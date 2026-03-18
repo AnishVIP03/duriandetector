@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>ThreatsPage
+    participant API1 as DRF<br/>ThreatListView
+    participant API2 as DRF<br/>ThreatCorrelationView
+    participant SER as ThreatIntelligenceSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to Threats page
+    FE->>API1: GET /api/threats/
+    API1->>DB: ThreatIntelligence.objects.all()
+    DB-->>API1: QuerySet[ThreatIntelligence]
+    API1->>SER: ThreatIntelligenceSerializer(threats, many=True)
+    SER-->>API1: Serialized threat data
+    API1-->>FE: 200 OK {threats: [...]}
+    FE-->>U: Display threat intelligence list
+    U->>FE: Click IP to correlate
+    FE->>API2: GET /api/threats/{ip}/correlate/
+    API2->>DB: ThreatIntelligence.objects.filter(ip=ip)
+    API2->>API2: _build_recommendation(threat_data)
+    API2-->>FE: 200 OK {correlation, recommendation}
+    FE-->>U: Display threat correlation details

@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> ViewMLConfig
+    ViewMLConfig --> SetThreshold : Enter threshold value
+    SetThreshold --> ValidateThreshold
+    ValidateThreshold --> InvalidValue : Out of range
+    InvalidValue --> SetThreshold
+    ValidateThreshold --> SaveThreshold : PATCH /api/ml-engine/config/
+    SaveThreshold --> UpdateDetection
+    UpdateDetection --> [*]

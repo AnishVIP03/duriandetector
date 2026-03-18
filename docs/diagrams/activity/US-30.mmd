@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> NavigateToAdmin
+    NavigateToAdmin --> EnterSearchQuery : Type email/name
+    EnterSearchQuery --> SubmitSearch : GET /api/accounts/users/?search=
+    SubmitSearch --> FetchResults
+    FetchResults --> DisplayUserList
+    DisplayUserList --> SelectUser
+    SelectUser --> ViewUserDetail
+    ViewUserDetail --> [*]

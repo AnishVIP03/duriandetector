@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing : Message sent
+    Processing --> IntentMatched : Pattern recognized
+    Processing --> FallbackUsed : No pattern match
+    IntentMatched --> ResponseDisplayed
+    FallbackUsed --> ResponseDisplayed
+    ResponseDisplayed --> Idle : Ready for next
+    ResponseDisplayed --> [*]

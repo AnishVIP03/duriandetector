@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor U as Team Leader
+    participant FE as React<br/>TeamPage
+    participant API as DRF<br/>RegenerateInviteView
+    participant Model as Environment Model
+    participant Perm as IsTeamLeader
+    participant DB as PostgreSQL
+
+    U->>FE: Click "Regenerate Invite Code"
+    FE->>API: POST /api/environments/{env_id}/regenerate-invite/
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed (Team Leader role)
+    API->>DB: Environment.objects.get(pk=env_id)
+    DB-->>API: Environment instance
+    API->>Model: environment.regenerate_invitation_code()
+    Model->>Model: _generate_unique_pin()
+    Model->>DB: UPDATE Environment SET pin=new_pin, invite_code=new_code
+    DB-->>Model: Updated
+    API-->>FE: 200 OK {new_invite_code, new_pin}
+    FE-->>U: Display new invite credentials

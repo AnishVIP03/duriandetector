@@ -1,0 +1,31 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>ForgotPasswordPage
+    participant API1 as DRF<br/>PasswordResetRequestView
+    participant API2 as DRF<br/>PasswordResetConfirmView
+    participant SER as PasswordResetRequestSerializer
+    participant Model as PasswordResetToken
+    participant Email as Email Service
+    participant DB as PostgreSQL
+
+    U->>FE: Enter registered email
+    FE->>API1: POST /api/accounts/password-reset/
+    API1->>SER: PasswordResetRequestSerializer.validate(data)
+    API1->>DB: CustomUser.objects.get(email=email)
+    DB-->>API1: User found
+    API1->>Model: PasswordResetToken.objects.create(user=user)
+    Model->>DB: INSERT reset token
+    DB-->>Model: Token instance
+    API1->>Email: send_mail(subject, reset_link, user.email)
+    API1-->>FE: 200 OK "Reset email sent"
+    FE-->>U: Display "Check your email"
+    Note over U,FE: User clicks reset link in email
+    U->>FE: Enter new password with token
+    FE->>API2: POST /api/accounts/password-reset/confirm/
+    API2->>DB: PasswordResetToken.objects.get(token=token)
+    DB-->>API2: Token instance
+    API2->>API2: Validate token.is_valid
+    API2->>DB: user.set_password(new_password)
+    DB-->>API2: Password updated
+    API2-->>FE: 200 OK "Password reset successful"
+    FE-->>U: Redirect to LoginPage

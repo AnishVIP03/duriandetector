@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NoDemo
+    NoDemo --> Generating : Start demo
+    Generating --> DemoActive : Data created
+    DemoActive --> Clearing : Clear demo
+    Clearing --> NoDemo : Data deleted
+    DemoActive --> [*]

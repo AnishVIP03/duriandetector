@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> OpenLoginPage
+    OpenLoginPage --> EnterCredentials
+    EnterCredentials --> SubmitLogin : POST /api/accounts/token/
+    SubmitLogin --> ValidateCredentials
+    ValidateCredentials --> InvalidCredentials : Wrong email/password
+    InvalidCredentials --> EnterCredentials
+    ValidateCredentials --> CheckSuspended
+    CheckSuspended --> AccountSuspended : User is suspended
+    AccountSuspended --> [*]
+    CheckSuspended --> GenerateJWT : Account active
+    GenerateJWT --> StoreTokens : Access + Refresh tokens
+    StoreTokens --> RedirectDashboard
+    RedirectDashboard --> UserSession
+    UserSession --> ClickLogout
+    ClickLogout --> ClearTokens
+    ClearTokens --> RedirectLogin
+    RedirectLogin --> [*]

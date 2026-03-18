@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> ActiveCode
+    ActiveCode --> Regenerating : Reset clicked
+    Regenerating --> NewCode : Code generated
+    NewCode --> ActiveCode : Code in use
+    NewCode --> [*]

@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> OpenLandingPage
+    OpenLandingPage --> LoadPricingSection
+    LoadPricingSection --> FetchPlansAPI : GET /api/subscriptions/plans/
+    FetchPlansAPI --> DisplayPlans : Success
+    FetchPlansAPI --> ShowError : Failure
+    DisplayPlans --> CompareTiers
+    CompareTiers --> SelectPlan
+    SelectPlan --> NavigateToRegister
+    ShowError --> RetryFetch
+    RetryFetch --> FetchPlansAPI
+    NavigateToRegister --> [*]

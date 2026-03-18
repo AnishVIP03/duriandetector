@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Loading
+    Loading --> MemberListDisplayed : Data fetched
+    MemberListDisplayed --> MemberSelected : Click member
+    MemberSelected --> MemberListDisplayed : Back
+    MemberListDisplayed --> [*]

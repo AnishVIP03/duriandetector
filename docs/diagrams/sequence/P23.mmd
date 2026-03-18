@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>IncidentListPage
+    participant API as DRF<br/>IncidentListCreateView
+    participant SER as CreateIncidentSerializer
+    participant Perm as IsPremiumOrAbove
+    participant DB as PostgreSQL
+
+    U->>FE: Click "Create Incident", fill form
+    FE->>API: POST /api/incidents/ {title, severity, linked_alerts, description}
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed (Premium tier)
+    API->>SER: CreateIncidentSerializer.validate(data)
+    SER-->>API: Validated incident data
+    API->>DB: Incident.objects.create(title, severity, status="open", created_by=user)
+    DB-->>API: Incident instance
+    API->>DB: incident.linked_alerts.set(alert_ids)
+    DB-->>API: Alerts linked
+    API-->>FE: 201 Created {incident_id, title, severity, status}
+    FE-->>U: Incident created and displayed in list

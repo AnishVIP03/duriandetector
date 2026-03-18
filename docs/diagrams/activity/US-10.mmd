@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> ViewAlertList
+    ViewAlertList --> SetDateRange : date_from, date_to
+    ViewAlertList --> SetCategory : alert_type
+    SetDateRange --> SubmitSearch
+    SetCategory --> SubmitSearch
+    SubmitSearch --> FetchResults : GET /api/alerts/?date_from=...&date_to=...
+    FetchResults --> DisplayResults
+    DisplayResults --> RefineSearch
+    RefineSearch --> SetDateRange
+    RefineSearch --> SetCategory
+    DisplayResults --> [*]

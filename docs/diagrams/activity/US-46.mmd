@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> NavigateToPacketInspector
+    NavigateToPacketInspector --> StartCapture : Select interface
+    StartCapture --> CreateSession : POST /api/network-capture/start/
+    CreateSession --> CapturingPackets
+    CapturingPackets --> DisplayPacketStream : Real-time feed
+    DisplayPacketStream --> SelectPacket
+    SelectPacket --> ViewPacketDetail : Protocol, payload, features
+    ViewPacketDetail --> DisplayPacketStream
+    DisplayPacketStream --> StopCapture
+    StopCapture --> SessionSummary
+    SessionSummary --> [*]

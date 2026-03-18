@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> OpenChatbot
+    OpenChatbot --> TypeMessage
+    TypeMessage --> SendMessage : POST /api/chatbot/send/
+    SendMessage --> BuildSystemPrompt : Include alert context
+    BuildSystemPrompt --> CallOllama : _call_ollama()
+    CallOllama --> OllamaProcessing : LLM generates response
+    OllamaProcessing --> OllamaSuccess : Response received
+    OllamaProcessing --> OllamaFailed : Ollama unavailable
+    OllamaFailed --> FallbackEnhanced : Use enhanced mode
+    FallbackEnhanced --> DisplayResponse
+    OllamaSuccess --> ParseMarkdown
+    ParseMarkdown --> DisplayResponse
+    DisplayResponse --> TypeMessage
+    DisplayResponse --> [*]

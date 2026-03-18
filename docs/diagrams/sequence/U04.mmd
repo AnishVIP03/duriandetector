@@ -1,0 +1,17 @@
+sequenceDiagram
+    actor U as Unregistered User
+    participant FE as React<br/>JoinEnvironmentPage
+    participant API as DRF<br/>JoinEnvironmentView
+    participant SER as JoinEnvironmentSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Enter invitation PIN
+    FE->>API: POST /api/environments/join/
+    API->>SER: JoinEnvironmentSerializer.validate(data)
+    SER->>DB: Environment.objects.get(pin=pin)
+    DB-->>SER: Environment instance (or 404)
+    SER-->>API: Validated environment
+    API->>DB: EnvironmentMembership.objects.create(user, env, role="member")
+    DB-->>API: Membership created
+    API-->>FE: 200 OK {env_id, env_name, role}
+    FE-->>U: Redirect to environment dashboard

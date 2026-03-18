@@ -1,0 +1,56 @@
+%%{init: {'flowchart': {'curve': 'stepAfter', 'nodeSpacing': 30, 'rankSpacing': 40}}}%%
+flowchart LR
+    classDef startEnd fill:#000,stroke:#000,color:#fff
+    classDef decision fill:#FFD700,stroke:#B8860B,color:#000
+    classDef activity fill:#fff,stroke:#000,color:#000
+
+    Start((Start)):::startEnd
+
+    Start --> UserValid[User<br/>Validation]:::activity
+    UserValid --> AuthCheck{Login<br/>Failed}:::decision
+    AuthCheck -->|Yes| ForgotPW[Forgot Password]:::activity
+    ForgotPW --> ResetPW[Reset<br/>Password]:::activity
+    ResetPW --> UserValid
+    AuthCheck -->|No| AdminDash[Display Admin<br/>Dashboard]:::activity
+    AdminDash --> D1{Action?}:::decision
+
+    D1 -->|Logout| Logout[Log out]:::activity
+    Logout --> EndL((End)):::startEnd
+
+    D1 -->|User Mgmt| SearchUsers[Search Users<br/>by Email / Name]:::activity
+    SearchUsers --> UserAction{User<br/>action?}:::decision
+    UserAction -->|Suspend| Suspend[Suspend User<br/>Account]:::activity
+    Suspend --> AutoLog1[Auto-Log<br/>Admin Action]:::activity
+    AutoLog1 --> MA{More<br/>Actions<br/>to do}:::decision
+    UserAction -->|Unsuspend| Unsuspend[Unsuspend User<br/>Account]:::activity
+    Unsuspend --> AutoLog2[Auto-Log<br/>Admin Action]:::activity
+    AutoLog2 --> MA
+    UserAction -->|Reset Password| ResetUserPW[Reset User<br/>Password]:::activity
+    ResetUserPW --> AutoLog3[Auto-Log<br/>Admin Action]:::activity
+    AutoLog3 --> MA
+    UserAction -->|Modify Tier| ModifyTier[Modify User<br/>Subscription Tier]:::activity
+    ModifyTier --> AutoLog4[Auto-Log<br/>Admin Action]:::activity
+    AutoLog4 --> MA
+
+    D1 -->|Audit Logs| ViewAudit[View Immutable<br/>Audit Logs]:::activity
+    ViewAudit --> ReviewLogs[Review Flagged<br/>Actions]:::activity
+    ReviewLogs --> MB{More<br/>Actions<br/>to do}:::decision
+
+    D1 -->|System Health| CheckHealth[Monitor System<br/>Health]:::activity
+    CheckHealth --> ViewServices[View DB / Redis /<br/>Celery Status &<br/>CPU / Memory]:::activity
+    ViewServices --> MB
+
+    D1 -->|Configure Demo| DemoAction{Demo<br/>action?}:::decision
+    DemoAction -->|Start| StartDemo[Start Demo<br/>Simulation]:::activity
+    StartDemo --> FanoutDemo[Fanout Demo Alerts<br/>to All Tier DBs]:::activity
+    FanoutDemo --> MC{More<br/>Actions<br/>to do}:::decision
+    DemoAction -->|Clear| ClearDemo[Clear All<br/>Demo Data]:::activity
+    ClearDemo --> MC
+
+    MA -->|Yes| AdminDash
+    MB -->|Yes| AdminDash
+    MC -->|Yes| AdminDash
+
+    MA -->|No| E1((End)):::startEnd
+    MB -->|No| E2((End)):::startEnd
+    MC -->|No| E3((End)):::startEnd

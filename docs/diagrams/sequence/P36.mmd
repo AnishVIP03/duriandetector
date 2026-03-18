@@ -1,0 +1,15 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>MLConfigPage
+    participant API as DRF<br/>MLMetricsView
+    participant SER as MLModelMetricsSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to ML Metrics section
+    FE->>API: GET /api/ml/metrics/
+    API->>DB: MLModelMetrics.objects.filter(environment=env).latest()
+    DB-->>API: MLModelMetrics instance
+    API->>SER: MLModelMetricsSerializer(metrics)
+    SER-->>API: {accuracy, precision, recall, f1_score, confusion_matrix}
+    API-->>FE: 200 OK {metrics data}
+    FE-->>U: Display accuracy, precision, recall, F1 score, confusion matrix

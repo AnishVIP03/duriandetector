@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> NavigateToBlockedIPs
+    NavigateToBlockedIPs --> FetchBlockedIPs : GET /api/alerts/blocked-ips/
+    FetchBlockedIPs --> DisplayBlockedList
+    DisplayBlockedList --> SearchIP : Filter by IP
+    SearchIP --> DisplayFiltered
+    DisplayFiltered --> SelectBlockedIP
+    SelectBlockedIP --> ClickUnblock
+    ClickUnblock --> ConfirmUnblock
+    ConfirmUnblock --> SendUnblock : POST /api/alerts/blocked-ips/{id}/unblock/
+    SendUnblock --> IPUnblocked
+    IPUnblocked --> RefreshList
+    RefreshList --> DisplayBlockedList
+    DisplayBlockedList --> [*]

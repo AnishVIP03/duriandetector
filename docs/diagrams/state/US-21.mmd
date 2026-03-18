@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Idle : No capture running
+    Idle --> Running : Capture started
+    Running --> Stopped : Duration elapsed
+    Running --> Error : Permission denied
+    Running --> Stopped : Manual stop
+    Stopped --> Idle : Session cleared
+    Error --> Idle : Error resolved

@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Open : Incident created
+    Open --> InProgress : Investigation started
+    InProgress --> Resolved : Issue fixed
+    InProgress --> Escalated : Needs attention
+    Escalated --> InProgress : De-escalated
+    Resolved --> Closed : Confirmed resolved
+    Closed --> [*]

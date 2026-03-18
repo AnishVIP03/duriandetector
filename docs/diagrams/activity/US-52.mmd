@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> NavigateToTrafficFilters
+    NavigateToTrafficFilters --> FetchFilters : GET /api/alerts/traffic-filters/
+    FetchFilters --> DisplayFilterList
+    DisplayFilterList --> ClickNewRule
+    ClickNewRule --> SelectCategory : volume/login/domain/custom
+    SelectCategory --> SelectFilterType : ip_range/port/protocol
+    SelectFilterType --> EnterValue
+    EnterValue --> SetThreshold : count + window
+    SetThreshold --> SelectAction : suppress/highlight/block
+    SelectAction --> CreateRule : POST /api/alerts/traffic-filters/
+    CreateRule --> RuleCreated
+    RuleCreated --> DisplayFilterList
+    DisplayFilterList --> ToggleRule : Enable/Disable
+    DisplayFilterList --> DeleteRule
+    DisplayFilterList --> [*]

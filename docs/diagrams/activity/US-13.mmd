@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> ViewAlertDetail
+    ViewAlertDetail --> ClickBlockIP
+    ClickBlockIP --> ConfirmBlock
+    ConfirmBlock --> SendBlockRequest : POST /api/alerts/{id}/block/
+    SendBlockRequest --> CreateBlockedIP
+    CreateBlockedIP --> UpdateAlertStatus
+    UpdateAlertStatus --> ShowSuccess : IP blocked
+    ShowSuccess --> [*]
+    state ViewBlockedList {
+        [*] --> FetchBlockedIPs
+        FetchBlockedIPs --> DisplayList
+        DisplayList --> ClickUnblock
+        ClickUnblock --> ConfirmUnblock
+        ConfirmUnblock --> SendUnblockRequest
+        SendUnblockRequest --> IPUnblocked
+    }

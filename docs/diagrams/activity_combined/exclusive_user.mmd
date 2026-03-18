@@ -1,0 +1,46 @@
+%%{init: {'flowchart': {'curve': 'stepAfter', 'nodeSpacing': 30, 'rankSpacing': 40}}}%%
+flowchart LR
+    classDef startEnd fill:#000,stroke:#000,color:#fff
+    classDef decision fill:#FFD700,stroke:#B8860B,color:#000
+    classDef activity fill:#fff,stroke:#000,color:#000
+
+    Start((Start)):::startEnd
+
+    Start --> UserValid[User<br/>Validation]:::activity
+    UserValid --> AuthCheck{Login<br/>Failed}:::decision
+    AuthCheck -->|Yes| ForgotPW[Forgot Password]:::activity
+    ForgotPW --> ResetPW[Reset<br/>Password]:::activity
+    ResetPW --> UserValid
+    AuthCheck -->|No| Dashboard[Display Exclusive<br/>SOC Dashboard]:::activity
+    Dashboard --> D1{Action?}:::decision
+
+    D1 -->|Logout| Logout[Log out]:::activity
+    Logout --> EndL((End)):::startEnd
+
+    D1 -->|View Team| ViewTeam[View Team<br/>Members &<br/>Roles]:::activity
+    ViewTeam --> MA{More<br/>Actions<br/>to do}:::decision
+
+    D1 -->|DurianBot AI| AskQ[Type Open-Ended<br/>Threat Analysis<br/>Question]:::activity
+    AskQ --> CallOllama[Call Ollama LLM<br/>with Alert Context]:::activity
+    CallOllama --> DisplayAI[Display AI<br/>Threat Analysis<br/>Response]:::activity
+    DisplayAI --> ContinueQ{Continue<br/>chat?}:::decision
+    ContinueQ -->|Yes| AskQ
+    ContinueQ -->|No| MB{More<br/>Actions<br/>to do}:::decision
+
+    D1 -->|Attack Chains| ViewChains[View Attack<br/>Chain Timeline]:::activity
+    ViewChains --> ChainDetail[View Kill Chain<br/>Visualisation &<br/>MITRE Phases]:::activity
+    ChainDetail --> MC{More<br/>Actions<br/>to do}:::decision
+
+    D1 -->|Risk Scores| ViewRisk[View Dynamic<br/>Risk Score]:::activity
+    ViewRisk --> RiskBreakdown[View Risk Factor<br/>Breakdown<br/>0 - 100]:::activity
+    RiskBreakdown --> MD{More<br/>Actions<br/>to do}:::decision
+
+    MA -->|Yes| Dashboard
+    MB -->|Yes| Dashboard
+    MC -->|Yes| Dashboard
+    MD -->|Yes| Dashboard
+
+    MA -->|No| E1((End)):::startEnd
+    MB -->|No| E2((End)):::startEnd
+    MC -->|No| E3((End)):::startEnd
+    MD -->|No| E4((End)):::startEnd

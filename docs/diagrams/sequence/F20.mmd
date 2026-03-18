@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>DashboardPage
+    participant API as DRF<br/>DashboardStatsView
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to Dashboard
+    FE->>API: GET /api/alerts/dashboard-stats/
+    API->>DB: Alert.objects.count()
+    API->>DB: Alert.objects.filter(severity="critical").count()
+    API->>DB: Alert.objects.values("alert_type").annotate(Count)
+    API->>DB: Alert.objects.values("protocol").annotate(Count)
+    API->>DB: BlockedIP.objects.count()
+    DB-->>API: Aggregated statistics
+    API-->>FE: 200 OK {total_alerts, by_severity, by_type, by_protocol, blocked_count}
+    FE->>FE: StatCard(stats)
+    FE->>FE: RiskGauge(risk_score)
+    FE->>FE: SeverityBar(severity_data)
+    FE-->>U: Render dashboard with charts and statistics

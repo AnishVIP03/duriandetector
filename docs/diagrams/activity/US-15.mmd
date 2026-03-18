@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> ViewSubscriptionPage
+    ViewSubscriptionPage --> SelectNewTier : Choose Premium/Exclusive
+    SelectNewTier --> OpenCheckout
+    OpenCheckout --> EnterPayment : Stripe checkout
+    EnterPayment --> ProcessPayment : POST /api/subscriptions/checkout/
+    ProcessPayment --> PaymentFailed : Card declined
+    PaymentFailed --> EnterPayment
+    ProcessPayment --> PaymentSuccess
+    PaymentSuccess --> UpdateUserRole
+    UpdateUserRole --> RefreshPermissions
+    RefreshPermissions --> ShowConfirmation
+    ShowConfirmation --> [*]

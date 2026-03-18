@@ -41,6 +41,8 @@ export default function AlertListPage() {
     alert_type: '',
     protocol: '',
     search: '',
+    date_from: '',
+    date_to: '',
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -62,6 +64,8 @@ export default function AlertListPage() {
       if (filters.alert_type) params.alert_type = filters.alert_type;
       if (filters.protocol) params.protocol = filters.protocol;
       if (filters.search) params.search = filters.search;
+      if (filters.date_from) params.date_from = filters.date_from;
+      if (filters.date_to) params.date_to = filters.date_to;
 
       const { data } = await alertsAPI.getAll(params);
       setAlerts(data.results || data);
@@ -90,7 +94,7 @@ export default function AlertListPage() {
   };
 
   const clearFilters = () => {
-    setFilters({ severity: '', alert_type: '', protocol: '', search: '' });
+    setFilters({ severity: '', alert_type: '', protocol: '', search: '', date_from: '', date_to: '' });
     setPage(1);
   };
 
@@ -153,7 +157,7 @@ export default function AlertListPage() {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <label className="text-xs text-soc-muted mb-1 block">Severity</label>
               <select
@@ -196,6 +200,24 @@ export default function AlertListPage() {
                 <option value="DNS">DNS</option>
                 <option value="SSH">SSH</option>
               </select>
+            </div>
+            <div>
+              <label className="text-xs text-soc-muted mb-1 block">Date From</label>
+              <input
+                type="datetime-local"
+                value={filters.date_from}
+                onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
+                className="soc-input !py-2"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-soc-muted mb-1 block">Date To</label>
+              <input
+                type="datetime-local"
+                value={filters.date_to}
+                onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
+                className="soc-input !py-2"
+              />
             </div>
           </div>
         </motion.div>

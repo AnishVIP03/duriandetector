@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> NavigateToVisualisation
+    NavigateToVisualisation --> SelectChartType : Line/Bar/Area/Pie
+    SelectChartType --> ConfigureGroupBy : severity/protocol/type
+    ConfigureGroupBy --> ConfigureBreakdown : Optional breakdown
+    ConfigureBreakdown --> SetDateRange : date_from, date_to
+    SetDateRange --> FetchData : GET /api/alerts/analytics/
+    FetchData --> RenderChart
+    RenderChart --> AdjustConfig : Modify parameters
+    AdjustConfig --> SelectChartType
+    RenderChart --> UsePreset : Quick preset
+    UsePreset --> FetchData
+    RenderChart --> [*]

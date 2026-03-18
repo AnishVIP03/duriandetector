@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> NavigateToMLConfig
+    NavigateToMLConfig --> FetchMetrics : GET /api/ml-engine/metrics/
+    FetchMetrics --> DisplayMetricCards
+    DisplayMetricCards --> ViewAccuracy
+    DisplayMetricCards --> ViewPrecision
+    DisplayMetricCards --> ViewRecall
+    DisplayMetricCards --> ViewF1Score
+    ViewAccuracy --> CompareModels
+    ViewPrecision --> CompareModels
+    ViewRecall --> CompareModels
+    ViewF1Score --> CompareModels
+    CompareModels --> [*]

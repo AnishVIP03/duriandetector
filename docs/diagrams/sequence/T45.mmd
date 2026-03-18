@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor U as Team Leader
+    participant FE as React<br/>TeamPage
+    participant API as DRF<br/>InviteMemberView
+    participant SER as InviteMemberSerializer
+    participant Perm as IsTeamLeader
+    participant DB as PostgreSQL
+
+    U->>FE: Enter user email, click "Invite"
+    FE->>API: POST /api/environments/{env_id}/invite/ {email}
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed (Team Leader role)
+    API->>SER: InviteMemberSerializer.validate(data)
+    SER->>DB: CustomUser.objects.get(email=email)
+    DB-->>SER: Target user found
+    SER-->>API: Validated invite data
+    API->>DB: EnvironmentMembership.objects.create(user, env, role="member")
+    DB-->>API: Membership created
+    API-->>FE: 201 Created {membership}
+    FE-->>U: User added to team members list

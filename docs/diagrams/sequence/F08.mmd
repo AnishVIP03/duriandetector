@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>AlertListPage
+    participant API as DRF<br/>AlertListView
+    participant SER as AlertListSerializer
+    participant MW as TierDatabaseMiddleware
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to Alerts page
+    FE->>API: GET /api/alerts/
+    API->>MW: __call__(request)
+    MW->>MW: set_db_for_role(user.role)
+    MW-->>API: DB routed to free_db
+    API->>DB: Alert.objects.all().order_by("-timestamp")
+    DB-->>API: QuerySet[Alert]
+    API->>SER: AlertListSerializer(alerts, many=True)
+    SER-->>API: Serialized alert list
+    API-->>FE: 200 OK {results: [...], count}
+    FE-->>U: Render alert table with severity badges

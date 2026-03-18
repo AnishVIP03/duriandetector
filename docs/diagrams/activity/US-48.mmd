@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> NavigateToDashboard
+    NavigateToDashboard --> FetchDashboardData : Multiple API calls
+    FetchDashboardData --> RenderRiskGauge
+    FetchDashboardData --> RenderSeverityChart
+    FetchDashboardData --> RenderHourlyTrend
+    FetchDashboardData --> RenderLiveFeed
+    RenderRiskGauge --> DashboardReady
+    RenderSeverityChart --> DashboardReady
+    RenderHourlyTrend --> DashboardReady
+    RenderLiveFeed --> DashboardReady
+    DashboardReady --> InteractWithWidgets
+    InteractWithWidgets --> [*]

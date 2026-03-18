@@ -1,0 +1,18 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>IncidentListPage
+    participant API as DRF<br/>IncidentDetailView
+    participant SER as UpdateIncidentSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Select incident, choose assignee from dropdown
+    FE->>API: PATCH /api/incidents/{id}/ {assigned_to: user_id}
+    API->>DB: Incident.objects.get(pk=id)
+    DB-->>API: Incident instance
+    API->>SER: UpdateIncidentSerializer.validate(data)
+    SER-->>API: Validated update
+    API->>DB: incident.assigned_to = target_user
+    API->>DB: incident.save()
+    DB-->>API: Updated
+    API-->>FE: 200 OK {incident with assigned_to}
+    FE-->>U: Assignee updated in incident card

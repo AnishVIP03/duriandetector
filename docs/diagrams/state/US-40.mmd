@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Loading
+    Loading --> HeatmapRendered : Data loaded
+    HeatmapRendered --> TechniqueHovered : Mouse over cell
+    TechniqueHovered --> HeatmapRendered : Mouse out
+    HeatmapRendered --> TechniqueClicked : Click cell
+    TechniqueClicked --> DetailShown
+    DetailShown --> HeatmapRendered : Close
+    HeatmapRendered --> [*]

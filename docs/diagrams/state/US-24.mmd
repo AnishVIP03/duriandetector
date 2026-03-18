@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> DefaultLayout
+    DefaultLayout --> Customising : Edit widgets
+    Customising --> Modified : Changes made
+    Modified --> Saved : Save layout
+    Saved --> DefaultLayout : Reset
+    Saved --> [*]

@@ -1,0 +1,18 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>ReportsPage
+    participant API as DRF<br/>GenerateReportView
+    participant SER as GenerateReportSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Select report type, date range, click "Generate"
+    FE->>API: POST /api/reports/ {type: "security", date_from, date_to}
+    API->>SER: GenerateReportSerializer.validate(data)
+    SER-->>API: Validated parameters
+    API->>DB: Alert.objects.filter(timestamp__range=[from, to])
+    DB-->>API: Alert data for period
+    API->>API: Aggregate statistics, generate summary
+    API->>DB: Report.objects.create(type, data, generated_by=user)
+    DB-->>API: Report instance
+    API-->>FE: 201 Created {report_id, type, generated_at}
+    FE-->>U: Report added to report list

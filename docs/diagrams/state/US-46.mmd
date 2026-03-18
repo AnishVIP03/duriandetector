@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Capturing : Start capture
+    Capturing --> PacketReceived : New packet
+    PacketReceived --> Capturing : Continue
+    Capturing --> Stopped : Stop/timeout
+    Stopped --> Idle : New session
+    Stopped --> [*]

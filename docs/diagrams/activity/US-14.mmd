@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NavigateToSubscription
+    NavigateToSubscription --> FetchCurrentPlan : GET /api/subscriptions/current/
+    FetchCurrentPlan --> DisplayPlanInfo
+    DisplayPlanInfo --> ViewFeatureLimits
+    ViewFeatureLimits --> CompareUpgradeOptions
+    CompareUpgradeOptions --> [*]

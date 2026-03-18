@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> TypeMessage
+    TypeMessage --> SendMessage
+    SendMessage --> DetectIntent
+    DetectIntent --> IsGreeting : Hello/Hi/Hey
+    DetectIntent --> IsThanks : Thank you
+    DetectIntent --> IsJoke : Tell me a joke
+    DetectIntent --> IsFrustration : Help/confused
+    IsGreeting --> RandomGreetingResponse
+    IsThanks --> ThankYouResponse
+    IsJoke --> RandomJokeResponse
+    IsFrustration --> HelpfulResponse
+    RandomGreetingResponse --> DisplayResponse
+    ThankYouResponse --> DisplayResponse
+    RandomJokeResponse --> DisplayResponse
+    HelpfulResponse --> DisplayResponse
+    DisplayResponse --> TypeMessage
+    DisplayResponse --> [*]

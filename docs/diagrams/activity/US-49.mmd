@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> ConfigureDemoMode
+    ConfigureDemoMode --> SetupDatabases : 3 isolated DBs
+    SetupDatabases --> SeedDemoUsers : seed_demo_users
+    SeedDemoUsers --> StartServices : Django + Redis + Celery
+    StartServices --> ConfigureLANURLs : Dynamic IP detection
+    ConfigureLANURLs --> Computer1Login : Free user
+    ConfigureLANURLs --> Computer2Login : Premium user
+    ConfigureLANURLs --> Computer3Login : Exclusive user
+    ConfigureLANURLs --> Computer4Login : Admin
+    ConfigureLANURLs --> Computer5Login : Server/Presenter
+    Computer1Login --> DemoRunning
+    Computer2Login --> DemoRunning
+    Computer3Login --> DemoRunning
+    Computer4Login --> DemoRunning
+    Computer5Login --> DemoRunning
+    DemoRunning --> [*]

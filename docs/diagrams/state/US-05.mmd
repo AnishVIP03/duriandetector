@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> LoggedOut
+    LoggedOut --> Authenticating : Submit credentials
+    Authenticating --> AuthFailed : Invalid credentials
+    AuthFailed --> LoggedOut
+    Authenticating --> LoggedIn : JWT issued
+    LoggedIn --> TokenExpiring : Access token expires
+    TokenExpiring --> Refreshing : Auto-refresh
+    Refreshing --> LoggedIn : New token
+    Refreshing --> LoggedOut : Refresh failed
+    LoggedIn --> LoggedOut : Logout clicked
+    LoggedOut --> [*]

@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> CurrentTier
+    CurrentTier --> Upgrading : Upgrade selected
+    CurrentTier --> Downgrading : Downgrade selected
+    Upgrading --> PaymentPending
+    Downgrading --> ConfirmDowngrade
+    PaymentPending --> NewTier : Payment success
+    PaymentPending --> CurrentTier : Payment failed
+    ConfirmDowngrade --> NewTier : Confirmed
+    NewTier --> [*]

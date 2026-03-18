@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Initial
+    Initial --> Loading : Page opened
+    Loading --> Loaded : Alerts fetched
+    Loading --> Error : Fetch failed
+    Error --> Loading : Retry
+    Loaded --> Browsing : User scrolls/pages
+    Browsing --> DetailView : Click alert
+    DetailView --> Browsing : Back to list
+    Browsing --> [*]

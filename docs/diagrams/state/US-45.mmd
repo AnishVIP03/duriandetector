@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Disconnected
+    Disconnected --> Connecting : Page loads
+    Connecting --> Connected : WebSocket open
+    Connecting --> Failed : Connection error
+    Failed --> Connecting : Retry
+    Connected --> MessageReceived : Alert arrives
+    MessageReceived --> Connected : Process & display
+    Connected --> Disconnected : Page closes
+    Connected --> Reconnecting : Connection lost
+    Reconnecting --> Connected : Reconnected

@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor A as Administrator
+    participant FE as React<br/>AdminAuditPage
+    participant API as DRF<br/>AuditLogListView
+    participant SER as AuditLogSerializer
+    participant Perm as IsAdmin
+    participant DB as PostgreSQL
+
+    A->>FE: Navigate to Audit Logs page
+    FE->>API: GET /api/audit/logs/
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed (Admin role)
+    API->>DB: AuditLog.objects.all().order_by("-timestamp")
+    DB-->>API: QuerySet[AuditLog]
+    API->>SER: AuditLogSerializer(logs, many=True)
+    SER-->>API: Serialized audit entries
+    API-->>FE: 200 OK {logs: [{action, admin, target, timestamp}, ...]}
+    FE->>FE: getActionColor(action) for styling
+    FE-->>U: Display immutable audit log table with action badges

@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> OpenChatbot
+    OpenChatbot --> TypeMessage
+    TypeMessage --> SendMessage : POST /api/chatbot/send/
+    SendMessage --> ClassifyIntent
+    ClassifyIntent --> FetchAlertContext : Get latest alerts
+    FetchAlertContext --> MITREMapping : Map to ATT&CK
+    MITREMapping --> BuildResponse
+    BuildResponse --> IncludeTactics : Add tactic details
+    IncludeTactics --> DisplayResponse
+    DisplayResponse --> TypeMessage
+    DisplayResponse --> [*]

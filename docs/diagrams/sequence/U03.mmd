@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor U as Unregistered User
+    participant FE as React<br/>CreateEnvironmentPage
+    participant API as DRF<br/>CreateEnvironmentView
+    participant SER as CreateEnvironmentSerializer
+    participant Model as Environment Model
+    participant DB as PostgreSQL
+
+    U->>FE: Enter environment name, select network interface
+    FE->>API: POST /api/environments/create/
+    API->>SER: CreateEnvironmentSerializer.validate(data)
+    SER-->>API: Validated data
+    API->>Model: Environment.objects.create(name, interface)
+    Model->>Model: _generate_unique_pin()
+    Model->>DB: INSERT Environment
+    DB-->>Model: Environment instance
+    API->>DB: EnvironmentMembership.objects.create(user, env, role="owner")
+    DB-->>API: Membership created
+    API-->>FE: 201 Created {env_id, invite_code, pin}
+    FE-->>U: Display dashboard with invite code

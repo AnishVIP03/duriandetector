@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NavigateToTeam
+    NavigateToTeam --> FetchMembers : GET /api/environments/{id}/members/
+    FetchMembers --> DisplayMemberList
+    DisplayMemberList --> ViewMemberRole
+    ViewMemberRole --> ViewMemberActivity
+    ViewMemberActivity --> [*]

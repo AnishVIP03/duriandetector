@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NoFilters
+    NoFilters --> FilterApplied : Select filter option
+    FilterApplied --> FilterApplied : Change filter
+    FilterApplied --> NoFilters : Clear filters
+    FilterApplied --> [*]
+    NoFilters --> [*]

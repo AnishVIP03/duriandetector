@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> NavigateToDemo
+    NavigateToDemo --> CheckExistingDemo
+    CheckExistingDemo --> DemoExists : Data found
+    DemoExists --> PromptClear
+    PromptClear --> ClearDemo : POST /api/demo/clear/
+    CheckExistingDemo --> NoDemoData : No data
+    NoDemoData --> ClickStartDemo
+    ClearDemo --> ClickStartDemo
+    ClickStartDemo --> GenerateAlerts : POST /api/demo/start/
+    GenerateAlerts --> Create30to50Alerts : Randomised profiles
+    Create30to50Alerts --> CreateAttackChains : 2-3 chains
+    CreateAttackChains --> DemoReady
+    DemoReady --> ExploreDashboard
+    ExploreDashboard --> [*]

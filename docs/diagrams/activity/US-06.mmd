@@ -1,0 +1,19 @@
+stateDiagram-v2
+    [*] --> ClickForgotPassword
+    ClickForgotPassword --> EnterEmail
+    EnterEmail --> SubmitRequest : POST /api/accounts/password-reset/
+    SubmitRequest --> ValidateEmail
+    ValidateEmail --> EmailNotFound : User not found
+    EmailNotFound --> EnterEmail
+    ValidateEmail --> GenerateToken
+    GenerateToken --> SendEmail : Reset link
+    SendEmail --> UserChecksEmail
+    UserChecksEmail --> ClickResetLink
+    ClickResetLink --> EnterNewPassword
+    EnterNewPassword --> SubmitNewPassword : POST /api/accounts/password-reset/confirm/
+    SubmitNewPassword --> ValidateToken
+    ValidateToken --> TokenExpired : Invalid/expired
+    TokenExpired --> ClickForgotPassword
+    ValidateToken --> UpdatePassword
+    UpdatePassword --> RedirectLogin
+    RedirectLogin --> [*]

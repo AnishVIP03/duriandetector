@@ -1,0 +1,28 @@
+sequenceDiagram
+    actor U as Exclusive User
+    participant FE as React<br/>ChatbotPage
+    participant API as DRF<br/>ChatSendMessageView
+    participant Ctx as _build_alert_context()
+    participant LLM as _call_ollama()
+    participant Ollama as Ollama API Server
+    participant DB as PostgreSQL
+
+    U->>FE: Type open-ended threat analysis question
+    FE->>API: POST /api/chat/send/ {session_id, message}
+    API->>DB: ChatSession.objects.get(pk=session_id)
+    API->>DB: ChatMessage.objects.filter(session=session).order_by("created_at")
+    DB-->>API: Conversation history
+    API->>Ctx: _build_alert_context(user_environment)
+    Ctx->>DB: Alert.objects.filter(environment=env)[:10]
+    DB-->>Ctx: Recent alert summary
+    Ctx-->>API: Alert context string
+    API->>DB: ChatMessage.objects.create(session, role="user", content=message)
+    API->>LLM: _call_ollama(message, history, alert_context)
+    LLM->>Ollama: POST http://localhost:11434/api/chat {model, messages, context}
+    Ollama-->>LLM: LLM response with threat analysis
+    LLM-->>API: AI-generated response
+    API->>DB: ChatMessage.objects.create(session, role="assistant", content=response)
+    API-->>FE: 200 OK {response, session_id}
+    FE->>FE: formatMessage(response)
+    FE->>FE: MessageBubble(response)
+    FE-->>U: Display AI threat analysis in chat

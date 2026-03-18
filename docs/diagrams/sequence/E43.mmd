@@ -1,0 +1,28 @@
+sequenceDiagram
+    actor U as Exclusive User
+    participant FE as React<br/>AttackChainPage
+    participant API1 as DRF<br/>AttackChainListView
+    participant API2 as DRF<br/>AttackChainDetailView
+    participant SER as AttackChainDetailSerializer
+    participant Perm as IsExclusiveOrAbove
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to Attack Chains page
+    FE->>API1: GET /api/attack-chains/
+    API1->>Perm: has_permission(request)
+    Perm-->>API1: Allowed (Exclusive tier)
+    API1->>DB: AttackChain.objects.filter(environment=env)
+    DB-->>API1: QuerySet[AttackChain]
+    API1-->>FE: 200 OK {chains: [...]}
+    FE->>FE: AttackChainCard(chain) for each
+    FE-->>U: Display attack chain timeline cards
+    U->>FE: Click chain for details
+    FE->>API2: GET /api/attack-chains/{id}/
+    API2->>DB: AttackChain.objects.get(pk=id)
+    DB-->>API2: Chain with linked alerts
+    API2->>SER: AttackChainDetailSerializer(chain)
+    SER-->>API2: Full chain data with alert nodes
+    API2-->>FE: 200 OK {chain detail with phases}
+    FE->>FE: getPhase(technique) for MITRE mapping
+    FE->>FE: AlertNode(alert) for each alert in chain
+    FE-->>U: Display kill chain visualization with alert nodes

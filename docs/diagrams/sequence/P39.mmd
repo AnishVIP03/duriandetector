@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>LogIngestionPage
+    participant API as DRF<br/>LogUploadView
+    participant SER as LogUploadSerializer
+    participant Model as LogUpload
+    participant DB as PostgreSQL
+
+    U->>FE: Select CSV/JSON file, click "Upload"
+    FE->>API: POST /api/log-upload/ (multipart/form-data)
+    API->>SER: LogUploadSerializer.validate(file)
+    SER-->>API: Validated file (csv or json format)
+    API->>Model: LogUpload.objects.create(file, format, status="pending")
+    Model->>DB: INSERT LogUpload
+    DB-->>Model: LogUpload instance
+    API->>API: Parse file rows into Alert objects
+    loop For each log entry
+        API->>DB: Alert.objects.create(parsed_alert_data)
+    end
+    API->>DB: log_upload.status = "completed"
+    API->>DB: log_upload.save()
+    API-->>FE: 200 OK {uploaded: count, status: "completed"}
+    FE-->>U: Display upload results with imported alert count

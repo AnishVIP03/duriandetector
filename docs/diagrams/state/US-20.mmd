@@ -1,0 +1,5 @@
+stateDiagram-v2
+    [*] --> DefaultThreshold
+    DefaultThreshold --> CustomThreshold : User sets value
+    CustomThreshold --> DefaultThreshold : Reset to default
+    CustomThreshold --> CustomThreshold : Adjust value

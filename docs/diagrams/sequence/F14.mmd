@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>AlertDetailPage
+    participant API1 as DRF<br/>BlockIPView
+    participant API2 as DRF<br/>UnblockIPView
+    participant SER as BlockIPActionSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Click "Block IP" on alert
+    FE->>API1: POST /api/alerts/{alert_id}/block/
+    API1->>SER: BlockIPActionSerializer.validate(data)
+    API1->>DB: Alert.objects.get(pk=alert_id)
+    DB-->>API1: Alert instance
+    API1->>DB: BlockedIP.objects.create(ip=alert.source_ip, reason)
+    DB-->>API1: BlockedIP created
+    API1-->>FE: 201 Created {blocked_ip}
+    FE-->>U: Show "IP Blocked" confirmation
+    Note over U,FE: Later, user wants to unblock
+    U->>FE: Click "Unblock IP" on alert
+    FE->>API2: POST /api/alerts/{alert_id}/unblock/
+    API2->>DB: BlockedIP.objects.filter(ip=alert.source_ip).delete()
+    DB-->>API2: Deleted
+    API2-->>FE: 200 OK "IP unblocked"
+    FE-->>U: Show "IP Unblocked" confirmation

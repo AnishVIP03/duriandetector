@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> NavigateToWhitelist
+    NavigateToWhitelist --> FetchWhitelistedIPs : GET /api/alerts/whitelist/
+    FetchWhitelistedIPs --> DisplayWhitelist
+    DisplayWhitelist --> ClickAddIP
+    ClickAddIP --> EnterIPAndReason
+    EnterIPAndReason --> SubmitWhitelist : POST /api/alerts/whitelist/
+    SubmitWhitelist --> IPWhitelisted
+    IPWhitelisted --> RefreshList
+    RefreshList --> DisplayWhitelist
+    DisplayWhitelist --> ClickRemoveIP
+    ClickRemoveIP --> ConfirmRemoval
+    ConfirmRemoval --> DeleteWhitelist : DELETE /api/alerts/whitelist/{id}/
+    DeleteWhitelist --> RefreshList
+    DisplayWhitelist --> [*]

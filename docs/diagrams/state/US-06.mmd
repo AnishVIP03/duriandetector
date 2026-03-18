@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> RequestSent : Submit email
+    RequestSent --> TokenGenerated : Valid email
+    RequestSent --> Error : Invalid email
+    Error --> Idle
+    TokenGenerated --> LinkClicked : User clicks email link
+    LinkClicked --> NewPasswordEntered : Enter new password
+    NewPasswordEntered --> PasswordUpdated : Token valid
+    NewPasswordEntered --> TokenExpired : Token invalid
+    TokenExpired --> Idle
+    PasswordUpdated --> [*]

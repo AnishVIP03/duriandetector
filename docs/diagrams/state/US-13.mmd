@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Active
+    Active --> Blocked : Block IP action
+    Blocked --> Active : Unblock IP action
+    Active --> [*]
+    Blocked --> [*]

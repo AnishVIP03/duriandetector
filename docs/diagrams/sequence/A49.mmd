@@ -1,0 +1,18 @@
+sequenceDiagram
+    actor A as Administrator
+    participant FE as React<br/>AdminUsersPage
+    participant API as DRF<br/>AdminUserListView
+    participant SER as AdminUserSerializer
+    participant Perm as IsAdmin
+    participant DB as PostgreSQL
+
+    A->>FE: Enter search query (email, name)
+    FE->>API: GET /api/accounts/admin/users/?search=john
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed (Admin role)
+    API->>DB: CustomUser.objects.filter(Q(email__icontains) | Q(first_name__icontains))
+    DB-->>API: Matching users across all tier DBs
+    API->>SER: AdminUserSerializer(users, many=True)
+    SER-->>API: Serialized user list with roles and status
+    API-->>FE: 200 OK {users: [{id, email, role, is_suspended}, ...]}
+    FE-->>U: Display filtered user table

@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>ChatbotPage
+    participant API as DRF<br/>ChatSendMessageView
+    participant Bot as ATT&CK-Aware Engine
+    participant Ctx as _build_alert_context()
+    participant DB as PostgreSQL
+
+    U->>FE: Ask ATT&CK-related question
+    FE->>API: POST /api/chat/send/ {session_id, message}
+    API->>DB: ChatMessage.objects.create(session, role="user", content=message)
+    API->>Ctx: _build_alert_context(user_environment)
+    Ctx->>DB: Alert.objects.filter(environment=env).order_by("-timestamp")[:10]
+    DB-->>Ctx: Recent alerts with MITRE mappings
+    Ctx-->>API: Alert context summary
+    API->>Bot: _fallback_response(message, alert_context)
+    Bot->>Bot: Match MITRE technique patterns
+    Bot->>Bot: Generate ATT&CK-enriched response
+    Bot-->>API: Enhanced response with technique references
+    API->>DB: ChatMessage.objects.create(session, role="assistant", content=response)
+    API-->>FE: 200 OK {response, session_id}
+    FE-->>U: Display response with ATT&CK technique links

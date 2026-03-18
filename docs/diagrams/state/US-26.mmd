@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> NoInvite
+    NoInvite --> InviteFormOpen : Click invite
+    InviteFormOpen --> Sending : Submit invite
+    Sending --> Sent : Success
+    Sending --> Error : Failed
+    Error --> InviteFormOpen : Retry
+    Sent --> [*]

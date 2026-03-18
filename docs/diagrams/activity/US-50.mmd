@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> ViewIncidentDetail
+    ViewIncidentDetail --> ScrollToNotes
+    ScrollToNotes --> ClickAddNote
+    ClickAddNote --> TypeNoteContent
+    TypeNoteContent --> SubmitNote : POST /api/incidents/{id}/notes/
+    SubmitNote --> NoteCreated
+    NoteCreated --> DisplayInTimeline
+    DisplayInTimeline --> AddAnotherNote
+    AddAnotherNote --> ClickAddNote
+    DisplayInTimeline --> [*]

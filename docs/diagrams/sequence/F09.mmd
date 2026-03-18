@@ -1,0 +1,15 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>AlertDetailPage
+    participant API as DRF<br/>AlertDetailView
+    participant SER as AlertDetailSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Click alert row in AlertListPage
+    FE->>API: GET /api/alerts/{alert_id}/
+    API->>DB: Alert.objects.get(pk=alert_id)
+    DB-->>API: Alert instance
+    API->>SER: AlertDetailSerializer(alert)
+    SER-->>API: Full alert data with metadata
+    API-->>FE: 200 OK {alert detail}
+    FE-->>U: Render alert detail panel with InfoRow components

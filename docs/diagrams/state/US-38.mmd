@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing : Message sent
+    Processing --> OllamaCall : Call LLM
+    OllamaCall --> LLMResponse : Success
+    OllamaCall --> Fallback : Ollama offline
+    LLMResponse --> Idle : Response displayed
+    Fallback --> EnhancedMode : Use rule-based
+    EnhancedMode --> Idle : Fallback displayed

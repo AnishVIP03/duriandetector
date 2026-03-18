@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> ViewTeamPage
+    ViewTeamPage --> ClickResetCredentials
+    ClickResetCredentials --> ConfirmReset
+    ConfirmReset --> RegenerateCode : regenerate_invitation_code()
+    RegenerateCode --> DisplayNewCode
+    DisplayNewCode --> CopyToClipboard
+    CopyToClipboard --> [*]

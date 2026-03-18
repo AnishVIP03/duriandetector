@@ -1,0 +1,15 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>ReportsPage
+    participant API as DRF<br/>ReportExportView
+    participant DB as PostgreSQL
+    participant PDF as WeasyPrint
+
+    U->>FE: Click "Export PDF" on report
+    FE->>API: GET /api/reports/{id}/export/
+    API->>DB: Report.objects.get(pk=id)
+    DB-->>API: Report instance with data
+    API->>PDF: Render HTML template with report data
+    PDF-->>API: PDF binary content
+    API-->>FE: 200 OK (application/pdf) Content-Disposition: attachment
+    FE-->>U: Browser downloads report PDF

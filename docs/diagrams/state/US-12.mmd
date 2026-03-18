@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Loading
+    Loading --> ThreatListLoaded : Data fetched
+    ThreatListLoaded --> ThreatSelected : Click threat
+    ThreatSelected --> DetailView : Show details
+    DetailView --> ThreatListLoaded : Back
+    ThreatListLoaded --> [*]

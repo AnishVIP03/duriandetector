@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> ViewTeamMembers
+    ViewTeamMembers --> SelectMember
+    SelectMember --> ClickRemove
+    ClickRemove --> ConfirmRemoval
+    ConfirmRemoval --> CancelRemoval : User cancels
+    CancelRemoval --> ViewTeamMembers
+    ConfirmRemoval --> SendRemoveRequest : DELETE /api/environments/{id}/members/{uid}/
+    SendRemoveRequest --> MemberRemoved
+    MemberRemoved --> RefreshList
+    RefreshList --> [*]

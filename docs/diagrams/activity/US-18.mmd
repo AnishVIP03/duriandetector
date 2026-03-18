@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> NavigateToMLConfig
+    NavigateToMLConfig --> FetchCurrentConfig : GET /api/ml-engine/config/
+    FetchCurrentConfig --> DisplayModelOptions
+    DisplayModelOptions --> SelectModel : RandomForest/SVM/IsolationForest
+    SelectModel --> SaveConfig : PATCH /api/ml-engine/config/
+    SaveConfig --> RetrainModel
+    RetrainModel --> ShowSuccess
+    ShowSuccess --> [*]

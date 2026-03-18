@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Active : Chain detected
+    Active --> Investigating : Analyst reviews
+    Investigating --> Mitigated : Threats addressed
+    Investigating --> Escalated : High risk
+    Escalated --> Mitigated : Resolved
+    Mitigated --> Closed : Confirmed safe
+    Closed --> [*]

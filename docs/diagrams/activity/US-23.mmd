@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> ViewReportsList
+    ViewReportsList --> SelectReport
+    SelectReport --> ClickDownload
+    ClickDownload --> FetchPDF : GET /api/reports/{id}/download/
+    FetchPDF --> DownloadFile
+    DownloadFile --> SaveLocally
+    SaveLocally --> [*]

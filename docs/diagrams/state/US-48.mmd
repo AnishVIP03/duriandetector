@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Loading
+    Loading --> DashboardReady : All data loaded
+    Loading --> PartialLoad : Some widgets loaded
+    PartialLoad --> DashboardReady : Remaining loaded
+    DashboardReady --> Refreshing : Auto-refresh (30s)
+    Refreshing --> DashboardReady : Data updated
+    DashboardReady --> [*]

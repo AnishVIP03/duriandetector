@@ -77,13 +77,14 @@ class WhitelistedIPSerializer(serializers.ModelSerializer):
 
 
 class TrafficFilterRuleSerializer(serializers.ModelSerializer):
-    """Serializer for traffic filter rules."""
+    """Serializer for traffic filter rules — US-52."""
     created_by_email = serializers.CharField(source='created_by.email', read_only=True)
 
     class Meta:
         model = TrafficFilterRule
         fields = [
             'id', 'name', 'filter_type', 'value', 'action',
+            'traffic_category', 'threshold_count', 'threshold_window_seconds',
             'is_active', 'created_by', 'created_by_email', 'created_at',
         ]
         read_only_fields = ['id', 'created_by', 'created_at']

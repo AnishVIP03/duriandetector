@@ -1,0 +1,13 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>CustomVisualizationPage
+    participant API as DRF<br/>AlertAnalyticsView
+    participant DB as PostgreSQL
+
+    U->>FE: Select metrics, chart type, time range
+    FE->>API: GET /api/analytics/?metric=severity&chart=bar&range=7d
+    API->>DB: Alert.objects.filter(timestamp__gte=start).values("severity").annotate(Count)
+    DB-->>API: Aggregated analytics data
+    API-->>FE: 200 OK {labels: [...], datasets: [...]}
+    FE->>FE: Render Recharts component (Bar / Line / Pie)
+    FE-->>U: Display custom visualization chart

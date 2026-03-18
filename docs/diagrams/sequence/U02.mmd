@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor U as Unregistered User
+    participant FE as React<br/>RegisterPage
+    participant API as DRF<br/>RegisterView
+    participant SER as RegisterSerializer
+    participant Router as TierDatabaseRouter
+    participant DB as PostgreSQL
+
+    U->>FE: Enter email, password, select plan
+    FE->>API: POST /api/accounts/register/
+    API->>SER: RegisterSerializer.validate(data)
+    SER->>DB: CustomUser.objects.filter(email=email)
+    DB-->>SER: Check uniqueness
+    SER-->>API: Validated data
+    API->>Router: set_db_for_role(selected_plan)
+    Router-->>API: Target DB alias (e.g. free_db)
+    API->>DB: CustomUser.objects.create_user(email, password)
+    DB-->>API: New CustomUser instance
+    API-->>FE: 201 Created {user_id, email, role}
+    FE-->>U: Display "Registration successful" message

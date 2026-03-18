@@ -1,0 +1,26 @@
+sequenceDiagram
+    actor A as Administrator
+    participant FE as React<br/>AdminHealthPage
+    participant API as DRF<br/>SystemHealthView
+    participant SER as SystemHealthSerializer
+    participant DB as PostgreSQL
+    participant Redis as Redis Server
+    participant Celery as Celery Worker
+
+    A->>FE: Navigate to System Health page
+    FE->>API: GET /api/system/health/
+    API->>DB: Test database connectivity (free_db, premium_db, exclusive_db)
+    DB-->>API: DB status OK / Error
+    API->>Redis: Test Redis connection
+    Redis-->>API: Redis status OK / Error
+    API->>Celery: Check Celery worker status
+    Celery-->>API: Worker status OK / Error
+    API->>API: Collect CPU, memory, disk metrics
+    API->>DB: SystemHealth.objects.create(snapshot)
+    DB-->>API: Health snapshot saved
+    API->>SER: SystemHealthSerializer(health_data)
+    API-->>FE: 200 OK {db_status, redis_status, celery_status, cpu, memory, disk}
+    FE->>FE: ServiceCard(service) for each service
+    FE->>FE: MetricGauge(metric) for each metric
+    FE->>FE: getOverallStatus(all_services)
+    FE-->>U: Display system health dashboard with service cards

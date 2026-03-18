@@ -1,0 +1,15 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>AlertListPage
+    participant API as DRF<br/>AlertListView
+    participant SER as AlertListSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Enter search query (IP, keyword)
+    FE->>API: GET /api/alerts/?search=192.168.1.100
+    API->>DB: Alert.objects.filter(Q(source_ip__icontains) | Q(description__icontains))
+    DB-->>API: Matching alerts
+    API->>SER: AlertListSerializer(results, many=True)
+    SER-->>API: Serialized search results
+    API-->>FE: 200 OK {results: [...], count}
+    FE-->>U: Display matching alerts

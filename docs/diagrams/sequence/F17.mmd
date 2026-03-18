@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>ChatbotPage
+    participant API as DRF<br/>ChatSendMessageView
+    participant Bot as Rule-Based Engine
+    participant Model as ChatSession / ChatMessage
+    participant DB as PostgreSQL
+
+    U->>FE: Type security question
+    FE->>API: POST /api/chat/send/ {session_id, message}
+    API->>DB: ChatSession.objects.get_or_create(user, session_id)
+    DB-->>API: ChatSession instance
+    API->>DB: ChatMessage.objects.create(session, role="user", content=message)
+    API->>Bot: _handle_greeting(message)
+    Bot-->>API: Not a greeting
+    API->>Bot: _handle_conversation(message)
+    Bot->>Bot: _handle_identity(message)
+    Bot->>Bot: _handle_joke(message)
+    Bot->>Bot: _fallback_free_response(message)
+    Bot-->>API: Rule-based response text
+    API->>DB: ChatMessage.objects.create(session, role="assistant", content=response)
+    DB-->>API: Message saved
+    API-->>FE: 200 OK {response, session_id}
+    FE-->>U: Display DurianBot response in MessageBubble

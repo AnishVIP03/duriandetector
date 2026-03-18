@@ -1,0 +1,17 @@
+sequenceDiagram
+    actor U as Unregistered User
+    participant FE as React<br/>LandingPage
+    participant API as DRF<br/>PlanListView
+    participant SER as SubscriptionPlanSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Click "View Plans"
+    FE->>API: GET /api/subscriptions/plans/
+    API->>DB: SubscriptionPlan.objects.all()
+    DB-->>API: QuerySet[SubscriptionPlan]
+    API->>SER: SubscriptionPlanSerializer(plans, many=True)
+    SER-->>API: Serialized plan data
+    API-->>FE: 200 OK {plans: [...]}
+    FE-->>U: Render pricing cards (Free / Premium / Exclusive)
+    U->>FE: Click "Get Started" on selected plan
+    FE-->>U: Navigate to RegisterPage with plan pre-selected

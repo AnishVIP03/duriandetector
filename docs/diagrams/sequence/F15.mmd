@@ -1,0 +1,15 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>SubscriptionPage
+    participant API as DRF<br/>MySubscriptionView
+    participant SER as UserSubscriptionSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to Subscription page
+    FE->>API: GET /api/subscriptions/my-subscription/
+    API->>DB: UserSubscription.objects.get(user=request.user)
+    DB-->>API: UserSubscription instance
+    API->>SER: UserSubscriptionSerializer(subscription)
+    SER-->>API: Serialized subscription data
+    API-->>FE: 200 OK {plan_name, features, expiry}
+    FE-->>U: Display current plan details and tier comparison

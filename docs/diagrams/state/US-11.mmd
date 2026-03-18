@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Loading
+    Loading --> MapReady : Alerts fetched
+    Loading --> Error : Fetch failed
+    MapReady --> MarkerClicked : Click pin
+    MarkerClicked --> PopupShown : Display info
+    PopupShown --> MapReady : Close popup
+    MapReady --> [*]

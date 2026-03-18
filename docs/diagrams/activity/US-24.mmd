@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> ViewDashboard
+    ViewDashboard --> SelectWidget : Choose chart type
+    SelectWidget --> ConfigureWidget : Set data source, range
+    ConfigureWidget --> RenderChart
+    RenderChart --> RearrangeWidgets : Drag and drop
+    RearrangeWidgets --> SaveLayout
+    SaveLayout --> [*]

@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>PacketInspectorPage
+    participant WS as Django Channels<br/>PacketConsumer
+    participant Task as capture_packets_task
+    participant Extractor as PacketFeatureExtractor
+
+    FE->>WS: WebSocket CONNECT ws/packets/
+    WS->>WS: connect() → group_add("packets")
+    WS-->>FE: Connection established
+    Note over Task: Background capture running
+    Task->>Extractor: extract(packet)
+    Extractor->>Extractor: _calculate_port_entropy()
+    Extractor-->>Task: Feature dict (protocol, flags, payload_size, ...)
+    Task->>WS: channel_layer.group_send("packets", packet_data)
+    WS->>WS: packet_message(event)
+    WS-->>FE: JSON {src_ip, dst_ip, protocol, flags, payload_size, ...}
+    FE->>FE: getProtocolColor(protocol)
+    FE->>FE: PacketDetail(packet) panel
+    FE-->>U: Render live packet stream with detail inspector

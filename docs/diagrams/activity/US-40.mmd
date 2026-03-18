@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> NavigateToMITRE
+    NavigateToMITRE --> FetchTactics : GET /api/mitre/tactics/
+    FetchTactics --> ProcessData : Aggregate technique counts
+    ProcessData --> RenderHeatmap : Color-coded grid
+    RenderHeatmap --> DisplayHeatmap
+    DisplayHeatmap --> ClickTechnique
+    ClickTechnique --> ShowTechniqueDetail
+    ShowTechniqueDetail --> DisplayHeatmap
+    DisplayHeatmap --> [*]

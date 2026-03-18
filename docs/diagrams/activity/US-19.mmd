@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> ViewMLConfig
+    ViewMLConfig --> AdjustSlider : low/medium/high
+    AdjustSlider --> SaveSensitivity : PATCH /api/ml-engine/config/
+    SaveSensitivity --> UpdateThreshold
+    UpdateThreshold --> ShowConfirmation
+    ShowConfirmation --> [*]

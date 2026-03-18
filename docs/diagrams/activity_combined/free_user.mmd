@@ -1,0 +1,68 @@
+%%{init: {'flowchart': {'curve': 'stepAfter', 'nodeSpacing': 30, 'rankSpacing': 40}}}%%
+flowchart LR
+    classDef startEnd fill:#000,stroke:#000,color:#fff
+    classDef decision fill:#FFD700,stroke:#B8860B,color:#000
+    classDef activity fill:#fff,stroke:#000,color:#000
+
+    Start((Start)):::startEnd
+
+    Start --> UserValid[User<br/>Validation]:::activity
+    UserValid --> AuthCheck{Login<br/>Failed}:::decision
+    AuthCheck -->|Yes| ForgotPW[Forgot Password]:::activity
+    ForgotPW --> ResetPW[Reset<br/>Password]:::activity
+    ResetPW --> UserValid
+    AuthCheck -->|No| Dashboard[Display Free<br/>SOC Dashboard]:::activity
+    Dashboard --> D1{Action?}:::decision
+
+    D1 -->|Logout| Logout[Log out]:::activity
+    Logout --> EndL((End)):::startEnd
+
+    D1 -->|View Alerts| AlertList[View Alert<br/>List]:::activity
+    AlertList --> AlertSub{Alert<br/>action?}:::decision
+    AlertSub -->|View Detail| AlertDetail[View Alert<br/>Detail]:::activity
+    AlertDetail --> MA{More<br/>Actions<br/>to do}:::decision
+    AlertSub -->|Filter| FilterAlerts[Filter Alerts by<br/>Severity / Protocol]:::activity
+    FilterAlerts --> MA
+    AlertSub -->|Search| SearchAlerts[Search Alerts<br/>by IP / Keyword]:::activity
+    SearchAlerts --> MA
+    AlertSub -->|Block IP| BlockIP[Block / Unblock<br/>IP Address]:::activity
+    BlockIP --> MA
+
+    D1 -->|GeoIP Map| GeoIP[View GeoIP<br/>Threat Map]:::activity
+    GeoIP --> MB{More<br/>Actions<br/>to do}:::decision
+
+    D1 -->|Threat Intel| Threats[View Threat<br/>Intelligence]:::activity
+    Threats --> Correlate[View IP Threat<br/>Correlation]:::activity
+    Correlate --> MB
+
+    D1 -->|Real-Time Alerts| WSAlerts[Receive WebSocket<br/>Alert Notifications]:::activity
+    WSAlerts --> MB
+
+    D1 -->|Demo Simulation| Demo[Run Demo<br/>Simulation]:::activity
+    Demo --> DemoResults[View Demo<br/>Summary Results]:::activity
+    DemoResults --> MC{More<br/>Actions<br/>to do}:::decision
+
+    D1 -->|DurianBot| Chat[Use DurianBot<br/>Basic Chat]:::activity
+    Chat --> MC
+
+    D1 -->|View Subscription| ViewSub[View Subscription<br/>Details]:::activity
+    ViewSub --> UpgradeQ{Upgrade<br/>plan?}:::decision
+    UpgradeQ -->|Yes| Upgrade[Upgrade via<br/>Stripe Payment]:::activity
+    Upgrade --> MD{More<br/>Actions<br/>to do}:::decision
+    UpgradeQ -->|No| MD
+
+    D1 -->|Manage Whitelist| Whitelist[Add / Remove<br/>Whitelisted IPs]:::activity
+    Whitelist --> MD
+
+    D1 -->|Manage Blocked IPs| BlockedIPs[View / Unblock<br/>Blocked IPs]:::activity
+    BlockedIPs --> MD
+
+    MA -->|Yes| Dashboard
+    MB -->|Yes| Dashboard
+    MC -->|Yes| Dashboard
+    MD -->|Yes| Dashboard
+
+    MA -->|No| E1((End)):::startEnd
+    MB -->|No| E2((End)):::startEnd
+    MC -->|No| E3((End)):::startEnd
+    MD -->|No| E4((End)):::startEnd

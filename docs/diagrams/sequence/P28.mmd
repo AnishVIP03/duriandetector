@@ -1,0 +1,17 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>MLConfigPage
+    participant API as DRF<br/>MLConfigView
+    participant SER as MLModelConfigSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Set confidence threshold value
+    FE->>API: PATCH /api/ml/config/ {confidence_threshold: 0.85}
+    API->>DB: MLModelConfig.objects.get(environment=env)
+    DB-->>API: MLModelConfig instance
+    API->>SER: MLModelConfigSerializer.validate(data)
+    API->>DB: config.confidence_threshold = 0.85
+    API->>DB: config.save()
+    DB-->>API: Config updated
+    API-->>FE: 200 OK {confidence_threshold: 0.85}
+    FE-->>U: Threshold updated, alerts below 85% confidence suppressed

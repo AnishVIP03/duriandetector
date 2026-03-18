@@ -1,0 +1,28 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>WhitelistPage
+    participant API1 as DRF<br/>WhitelistedIPListCreateView
+    participant API2 as DRF<br/>WhitelistedIPDeleteView
+    participant SER as WhitelistedIPSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to Whitelist page
+    FE->>API1: GET /api/whitelisted-ips/
+    API1->>DB: WhitelistedIP.objects.all()
+    DB-->>API1: QuerySet[WhitelistedIP]
+    API1->>SER: WhitelistedIPSerializer(ips, many=True)
+    API1-->>FE: 200 OK {whitelisted_ips: [...]}
+    FE-->>U: Display whitelist table
+    U->>FE: Enter IP address, click "Add to Whitelist"
+    FE->>API1: POST /api/whitelisted-ips/ {ip, reason}
+    API1->>SER: WhitelistedIPSerializer.validate(data)
+    API1->>DB: WhitelistedIP.objects.create(ip=ip, reason=reason)
+    DB-->>API1: WhitelistedIP created
+    API1-->>FE: 201 Created
+    FE-->>U: IP added to whitelist
+    U->>FE: Click "Remove" on whitelisted IP
+    FE->>API2: DELETE /api/whitelisted-ips/{id}/
+    API2->>DB: WhitelistedIP.objects.get(pk=id).delete()
+    DB-->>API2: Deleted
+    API2-->>FE: 204 No Content
+    FE-->>U: IP removed from whitelist

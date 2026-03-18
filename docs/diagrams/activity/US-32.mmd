@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> FindUser
+    FindUser --> ClickResetPassword
+    ClickResetPassword --> ConfirmReset
+    ConfirmReset --> SendResetRequest : POST /api/accounts/users/{id}/reset-password/
+    SendResetRequest --> GenerateNewPassword
+    GenerateNewPassword --> SendEmailNotification
+    SendEmailNotification --> LogAudit : AuditLog created
+    LogAudit --> ShowSuccess
+    ShowSuccess --> [*]

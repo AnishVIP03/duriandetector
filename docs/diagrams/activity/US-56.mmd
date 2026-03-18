@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> AdminPerformsAction
+    AdminPerformsAction --> SuspendUser
+    AdminPerformsAction --> UnsuspendUser
+    AdminPerformsAction --> ResetPassword
+    AdminPerformsAction --> UpdateSubscription
+    SuspendUser --> LogAuditEntry : _log_admin_action()
+    UnsuspendUser --> LogAuditEntry
+    ResetPassword --> LogAuditEntry
+    UpdateSubscription --> LogAuditEntry
+    LogAuditEntry --> SaveToDatabase : AuditLog.objects.create()
+    SaveToDatabase --> RecordMetadata : IP, user agent, timestamp
+    RecordMetadata --> AuditComplete
+    AuditComplete --> ViewInAuditLogs
+    ViewInAuditLogs --> [*]

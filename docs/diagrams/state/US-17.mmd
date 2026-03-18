@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Unassigned
+    Unassigned --> Assigned : Assign to member
+    Assigned --> Reassigned : Change assignee
+    Reassigned --> Assigned
+    Assigned --> StatusUpdated : Change status
+    StatusUpdated --> [*]

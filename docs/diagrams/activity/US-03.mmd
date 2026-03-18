@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> OpenSetupPage
+    OpenSetupPage --> FillEnvironmentDetails : Name, description, interface
+    FillEnvironmentDetails --> SubmitForm
+    SubmitForm --> ValidateInput
+    ValidateInput --> ShowError : Invalid
+    ShowError --> FillEnvironmentDetails
+    ValidateInput --> CreateEnvironment : POST /api/environments/
+    CreateEnvironment --> CreateMembership : Auto-assign owner
+    CreateMembership --> GenerateInviteCode
+    GenerateInviteCode --> ShowDashboard
+    ShowDashboard --> [*]

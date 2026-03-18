@@ -1,0 +1,5 @@
+stateDiagram-v2
+    [*] --> NotWhitelisted
+    NotWhitelisted --> Whitelisted : Add to whitelist
+    Whitelisted --> NotWhitelisted : Remove from whitelist
+    Whitelisted --> [*]

@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Loading
+    Loading --> AllLogs : Data fetched
+    AllLogs --> Filtered : Apply filter
+    Filtered --> AllLogs : Clear filter
+    AllLogs --> DetailView : Click log entry
+    Filtered --> DetailView : Click log entry
+    DetailView --> AllLogs : Back
+    AllLogs --> [*]

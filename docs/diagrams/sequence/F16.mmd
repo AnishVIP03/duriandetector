@@ -1,0 +1,21 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>SubscriptionPage
+    participant API as DRF<br/>UpgradeSubscriptionView
+    participant SER as UpgradeSubscriptionSerializer
+    participant Stripe as Stripe API
+    participant Router as TierDatabaseRouter
+    participant DB as PostgreSQL
+
+    U->>FE: Select target tier, click "Upgrade"
+    FE->>API: POST /api/subscriptions/upgrade/ {plan: "premium"}
+    API->>SER: UpgradeSubscriptionSerializer.validate(data)
+    SER-->>API: Validated plan selection
+    API->>Stripe: stripe.PaymentIntent.create(amount, currency)
+    Stripe-->>API: Payment confirmed
+    API->>Router: set_db_for_role("premium")
+    API->>DB: Migrate user data to premium_db
+    API->>DB: UserSubscription.objects.update(plan="premium")
+    DB-->>API: Subscription updated
+    API-->>FE: 200 OK {new_plan, features}
+    FE-->>U: Display "Upgrade successful" with new features

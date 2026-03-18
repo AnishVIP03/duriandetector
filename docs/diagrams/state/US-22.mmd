@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> NotGenerated
+    NotGenerated --> Generating : Submit parameters
+    Generating --> Ready : PDF generated
+    Generating --> Failed : Generation error
+    Failed --> NotGenerated : Retry
+    Ready --> Downloaded : User downloads
+    Ready --> [*]

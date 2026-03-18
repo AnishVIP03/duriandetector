@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> NoFile
+    NoFile --> FileSelected : File dropped/selected
+    FileSelected --> Validating : Check format
+    Validating --> Invalid : Bad format
+    Invalid --> NoFile
+    Validating --> Uploading : Valid format
+    Uploading --> Processing : Server parsing
+    Processing --> Complete : Import done
+    Processing --> PartialFail : Some records failed
+    Complete --> [*]
+    PartialFail --> [*]

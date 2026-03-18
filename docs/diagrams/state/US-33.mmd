@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> FreeUser
+    FreeUser --> PremiumUser : Admin upgrades
+    PremiumUser --> ExclusiveUser : Admin upgrades
+    ExclusiveUser --> PremiumUser : Admin downgrades
+    PremiumUser --> FreeUser : Admin downgrades
+    FreeUser --> ExclusiveUser : Admin upgrades

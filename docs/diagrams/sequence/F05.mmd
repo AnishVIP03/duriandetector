@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>LoginPage
+    participant Store as useAuthStore
+    participant API as DRF<br/>LoginView
+    participant SER as LoginSerializer
+    participant Auth as authenticate_across_databases()
+    participant JWT as get_tokens_for_user()
+    participant DB as PostgreSQL
+
+    U->>FE: Enter email & password
+    FE->>API: POST /api/accounts/login/
+    API->>SER: LoginSerializer.validate(data)
+    SER-->>API: Validated credentials
+    API->>Auth: authenticate_across_databases(email, password)
+    Auth->>DB: Query CustomUser across free_db, premium_db, exclusive_db
+    DB-->>Auth: User found in free_db
+    Auth-->>API: (user, db_alias)
+    API->>JWT: get_tokens_for_user(user, db_alias)
+    JWT-->>API: {access_token, refresh_token}
+    API-->>FE: 200 OK {tokens, user_profile}
+    FE->>Store: setAuth(tokens, user)
+    FE-->>U: Redirect to DashboardPage

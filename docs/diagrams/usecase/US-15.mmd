@@ -1,0 +1,5 @@
+graph LR
+    A((Free User)) --> UC1[Upgrade Subscription]
+    UC1 --> UC2[Select New Tier]
+    UC1 --> UC3[Process Payment via Stripe]
+    UC3 --> UC4[Update User Role]

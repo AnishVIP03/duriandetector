@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Loading
+    Loading --> Loaded : Alert fetched
+    Loading --> NotFound : Alert doesn't exist
+    Loaded --> Viewing : Display all sections
+    Viewing --> [*]
+    NotFound --> [*]

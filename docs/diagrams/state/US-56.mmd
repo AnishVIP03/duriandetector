@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> ActionTriggered
+    ActionTriggered --> ActionExecuted : Admin action runs
+    ActionExecuted --> AuditLogged : _log_admin_action() called
+    AuditLogged --> Persisted : Saved to AuditLog table
+    Persisted --> Viewable : Visible in Audit Logs page
+    Viewable --> [*]

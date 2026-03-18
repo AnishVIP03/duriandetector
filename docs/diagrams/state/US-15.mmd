@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Free
+    Free --> CheckingOut : Click upgrade
+    CheckingOut --> PaymentPending : Stripe checkout
+    PaymentPending --> Free : Payment failed
+    PaymentPending --> Premium : Payment success
+    Premium --> Exclusive : Upgrade again
+    Premium --> Free : Downgrade
+    Exclusive --> Premium : Downgrade
+    Premium --> [*]
+    Exclusive --> [*]

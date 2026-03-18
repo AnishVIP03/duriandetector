@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>PacketInspectorPage
+    participant API1 as DRF<br/>StartCaptureView
+    participant API2 as DRF<br/>CaptureStatusView
+    participant Task as capture_packets_task
+    participant Celery as Celery Worker
+    participant DB as PostgreSQL
+
+    U->>FE: Click "Start Capture"
+    FE->>API1: POST /api/capture/start/ {interface: "eth0"}
+    API1->>DB: CaptureSession.objects.create(status="running", interface="eth0")
+    API1->>Celery: capture_packets_task.delay(session_id)
+    Celery->>Task: Start Scapy sniff()
+    API1-->>FE: 200 OK {session_id, status: "running"}
+    FE-->>U: Display "Capture running" status
+    U->>FE: Check capture status
+    FE->>API2: GET /api/capture/status/
+    API2->>DB: CaptureSession.objects.latest()
+    DB-->>API2: Session with packet count
+    API2-->>FE: 200 OK {status, packets_captured, duration}
+    FE-->>U: Display live capture metrics

@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Loading : User opens page
+    Loading --> Loaded : Plans fetched successfully
+    Loading --> Error : API failure
+    Error --> Loading : Retry
+    Loaded --> PlanSelected : User clicks plan
+    PlanSelected --> Redirecting : Navigate to register
+    Redirecting --> [*]

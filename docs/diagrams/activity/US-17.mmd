@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> ViewIncidentDetail
+    ViewIncidentDetail --> AssignToMember : Select team member
+    AssignToMember --> UpdateAssignment : PATCH /api/incidents/{id}/
+    UpdateAssignment --> ChangeStatus : Update status
+    ChangeStatus --> SelectNewStatus : open/in_progress/resolved/closed
+    SelectNewStatus --> SaveStatus : PATCH /api/incidents/{id}/
+    SaveStatus --> ShowUpdated
+    ShowUpdated --> [*]

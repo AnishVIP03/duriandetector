@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> ViewAttackChains
+    ViewAttackChains --> FetchRiskScores
+    FetchRiskScores --> CalculateScore : Weighted severity + count
+    CalculateScore --> DisplayRiskBadges
+    DisplayRiskBadges --> SortByRisk : Highest risk first
+    SortByRisk --> PrioritiseResponse
+    PrioritiseResponse --> [*]

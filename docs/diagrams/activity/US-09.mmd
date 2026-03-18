@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> ViewAlertList
+    ViewAlertList --> OpenFilters
+    OpenFilters --> SelectSeverity : severity=high
+    OpenFilters --> SelectProtocol : protocol=TCP
+    OpenFilters --> SelectType : alert_type=dos
+    SelectSeverity --> ApplyFilters
+    SelectProtocol --> ApplyFilters
+    SelectType --> ApplyFilters
+    ApplyFilters --> FetchFiltered : GET /api/alerts/?severity=high
+    FetchFiltered --> DisplayResults
+    DisplayResults --> ModifyFilters : Adjust criteria
+    ModifyFilters --> ApplyFilters
+    DisplayResults --> ClearFilters
+    ClearFilters --> FetchAll
+    FetchAll --> DisplayResults
+    DisplayResults --> [*]

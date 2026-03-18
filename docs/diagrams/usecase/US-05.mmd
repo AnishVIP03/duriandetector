@@ -1,0 +1,6 @@
+graph LR
+    A((Free User)) --> UC1[Login]
+    A --> UC2[Logout]
+    UC1 --> UC3[Validate Credentials]
+    UC1 --> UC4[Generate JWT Token]
+    UC2 --> UC5[Clear Session]

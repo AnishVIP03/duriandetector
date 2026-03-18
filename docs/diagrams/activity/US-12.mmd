@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> NavigateToThreats
+    NavigateToThreats --> FetchThreats : GET /api/threats/
+    FetchThreats --> DisplayThreatList : Success
+    DisplayThreatList --> SelectThreat
+    SelectThreat --> ViewThreatDetail
+    ViewThreatDetail --> CorrelateWithAlerts
+    CorrelateWithAlerts --> ViewRelatedAlerts
+    ViewRelatedAlerts --> [*]

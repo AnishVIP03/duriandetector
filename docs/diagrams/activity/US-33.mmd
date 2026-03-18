@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> FindUser
+    FindUser --> ViewCurrentTier
+    ViewCurrentTier --> SelectNewTier : free/premium/exclusive
+    SelectNewTier --> ConfirmChange
+    ConfirmChange --> UpdateSubscription : PATCH /api/accounts/users/{id}/
+    UpdateSubscription --> LogAudit : AuditLog created
+    LogAudit --> ShowSuccess
+    ShowSuccess --> [*]

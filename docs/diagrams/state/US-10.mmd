@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NoSearch
+    NoSearch --> Searching : Set date/category
+    Searching --> ResultsDisplayed : Results returned
+    ResultsDisplayed --> Searching : Refine search
+    ResultsDisplayed --> NoSearch : Clear search
+    ResultsDisplayed --> [*]

@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor U as Exclusive User
+    participant FE as React<br/>AttackChainPage
+    participant API as DRF<br/>DynamicRiskScoreView
+    participant SER as EnvironmentRiskScoreSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: View Risk Score panel
+    FE->>API: GET /api/risk-score/
+    API->>DB: Alert.objects.filter(environment=env, timestamp__gte=24h_ago)
+    DB-->>API: Recent alerts
+    API->>API: Calculate severity_score (0-40 pts)
+    API->>API: Calculate active_threats (0-25 pts)
+    API->>DB: BlockedIP.objects.filter(environment=env).count()
+    API->>API: Calculate blocked_ratio (0-15 pts)
+    API->>API: Calculate alert_velocity (0-20 pts)
+    API->>API: total_risk = severity + threats + blocked + velocity
+    API->>DB: EnvironmentRiskScore.objects.create(score=total_risk, breakdown)
+    DB-->>API: Snapshot saved
+    API->>SER: EnvironmentRiskScoreSerializer(risk_data)
+    API-->>FE: 200 OK {score: 73, breakdown: {severity: 32, threats: 20, ...}}
+    FE->>FE: DetailedRiskGauge(score, breakdown)
+    FE-->>U: Display risk gauge (0-100) with factor breakdown

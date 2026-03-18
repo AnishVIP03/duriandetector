@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Active : Member in environment
+    Active --> PendingRemoval : Remove clicked
+    PendingRemoval --> Active : Cancelled
+    PendingRemoval --> Removed : Confirmed
+    Removed --> [*]

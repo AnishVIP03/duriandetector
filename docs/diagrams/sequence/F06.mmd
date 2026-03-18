@@ -1,0 +1,14 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>MainLayout
+    participant Store as useAuthStore
+    participant API as DRF<br/>LogoutView
+    participant JWT as Token Blacklist
+
+    U->>FE: Click "Logout" button
+    FE->>API: POST /api/accounts/logout/ {refresh_token}
+    API->>JWT: BlacklistMixin.blacklist(refresh_token)
+    JWT-->>API: Token blacklisted
+    API-->>FE: 205 Reset Content
+    FE->>Store: clearAuth()
+    FE-->>U: Redirect to LoginPage

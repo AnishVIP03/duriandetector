@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> OpenJoinPage
+    OpenJoinPage --> EnterPIN : Type invite code
+    EnterPIN --> SubmitPIN
+    SubmitPIN --> ValidatePIN : POST /api/environments/join/
+    ValidatePIN --> InvalidPIN : Code not found
+    InvalidPIN --> EnterPIN
+    ValidatePIN --> CheckExistingMembership
+    CheckExistingMembership --> AlreadyMember : Membership exists
+    AlreadyMember --> ShowDashboard
+    CheckExistingMembership --> CreateMembership : New member
+    CreateMembership --> AssignRole : security_analyst role
+    AssignRole --> ShowDashboard
+    ShowDashboard --> [*]

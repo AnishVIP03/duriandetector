@@ -1,0 +1,21 @@
+sequenceDiagram
+    actor A as Administrator
+    participant FE as React<br/>AdminUsersPage
+    participant API as DRF<br/>AdminResetPasswordView
+    participant Audit as _log_admin_action()
+    participant Perm as IsAdmin
+    participant DB as PostgreSQL
+
+    A->>FE: Click "Reset Password" on user, enter new password
+    FE->>API: POST /api/accounts/admin/users/{id}/reset-password/ {new_password}
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed
+    API->>DB: CustomUser.objects.get(pk=id)
+    DB-->>API: User instance
+    API->>DB: user.set_password(new_password)
+    API->>DB: user.save()
+    DB-->>API: Password updated
+    API->>Audit: _log_admin_action(admin, "reset_password", target_user)
+    Audit->>DB: AuditLog.objects.create(action, admin, target)
+    API-->>FE: 200 OK "Password reset successfully"
+    FE-->>U: Display success confirmation

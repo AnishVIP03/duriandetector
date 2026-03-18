@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Checking
+    Checking --> AllHealthy : All services OK
+    Checking --> Degraded : Some services down
+    Checking --> Critical : Core service down
+    AllHealthy --> Checking : Auto-refresh
+    Degraded --> Checking : Auto-refresh
+    Critical --> Checking : Auto-refresh

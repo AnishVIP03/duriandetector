@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> FindUser
+    FindUser --> ClickSuspend
+    ClickSuspend --> EnterReason : Suspension reason
+    EnterReason --> ConfirmSuspend
+    ConfirmSuspend --> SendSuspendRequest : POST /api/accounts/users/{id}/suspend/
+    SendSuspendRequest --> UserSuspended
+    UserSuspended --> LogAudit : AuditLog created
+    LogAudit --> [*]
+    state UnsuspendFlow {
+        [*] --> ClickUnsuspend
+        ClickUnsuspend --> ConfirmUnsuspend
+        ConfirmUnsuspend --> SendUnsuspendRequest
+        SendUnsuspendRequest --> UserActivated
+        UserActivated --> LogUnsuspendAudit
+    }

@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Calculated
+    Calculated --> Low : score < 30
+    Calculated --> Medium : 30 <= score < 60
+    Calculated --> High : 60 <= score < 80
+    Calculated --> Critical : score >= 80
+    Low --> Recalculated : New alert added
+    Medium --> Recalculated
+    High --> Recalculated
+    Critical --> Recalculated
+    Recalculated --> Calculated

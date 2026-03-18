@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NoEnvironment
+    NoEnvironment --> Creating : User fills form
+    Creating --> Active : Environment created
+    Creating --> Error : Creation failed
+    Error --> Creating : Retry
+    Active --> [*]

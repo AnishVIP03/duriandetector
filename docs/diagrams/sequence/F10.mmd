@@ -1,0 +1,15 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>AlertListPage
+    participant API as DRF<br/>AlertListView
+    participant SER as AlertListSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Set filter (severity, protocol, alert_type)
+    FE->>API: GET /api/alerts/?severity=high&protocol=TCP&alert_type=dos
+    API->>DB: Alert.objects.filter(severity="high", protocol="TCP", alert_type="dos")
+    DB-->>API: Filtered QuerySet
+    API->>SER: AlertListSerializer(filtered_alerts, many=True)
+    SER-->>API: Serialized filtered results
+    API-->>FE: 200 OK {results: [...], count}
+    FE-->>U: Update alert table with filtered results

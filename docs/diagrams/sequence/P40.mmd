@@ -1,0 +1,14 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>CustomVisualizationPage
+    participant API as DRF<br/>AlertAnalyticsView
+    participant DB as PostgreSQL
+
+    U->>FE: Configure chart (select metric, dimensions, chart type)
+    FE->>API: GET /api/analytics/?metric=protocol&dimension=time&chart=line&range=30d
+    API->>DB: Alert.objects.filter(timestamp__gte=start)
+    API->>DB: .values("protocol", "timestamp__date").annotate(Count)
+    DB-->>API: Time-series aggregation
+    API-->>FE: 200 OK {labels, datasets: [{label: "TCP", data: [...]}, ...]}
+    FE->>FE: Render Recharts Line/Bar/Pie chart
+    FE-->>U: Display custom time-series visualization

@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> FormEmpty
+    FormEmpty --> FormFilling : User starts typing
+    FormFilling --> Validating : Submit clicked
+    Validating --> ValidationError : Invalid fields
+    ValidationError --> FormFilling : Fix errors
+    Validating --> Submitting : All valid
+    Submitting --> Success : 201 response
+    Submitting --> ServerError : 400/500 response
+    ServerError --> FormFilling : Fix and retry
+    Success --> [*]

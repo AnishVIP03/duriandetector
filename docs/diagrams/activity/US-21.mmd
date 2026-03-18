@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> NavigateToSystem
+    NavigateToSystem --> FetchCaptureStatus : GET /api/network-capture/status/
+    FetchCaptureStatus --> DisplayStatus
+    DisplayStatus --> ViewActiveSession
+    ViewActiveSession --> CheckPacketCount
+    CheckPacketCount --> ViewAlertCount
+    ViewAlertCount --> [*]

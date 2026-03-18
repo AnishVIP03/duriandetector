@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> CurrentPassword
+    CurrentPassword --> Resetting : Admin triggers reset
+    Resetting --> TempPassword : New password generated
+    TempPassword --> UserChanges : User logs in
+    UserChanges --> NewPassword : Password updated
+    NewPassword --> [*]

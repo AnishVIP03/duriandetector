@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Listening
+    Listening --> GreetingDetected : Greeting intent
+    Listening --> JokeDetected : Joke intent
+    Listening --> ThanksDetected : Thanks intent
+    Listening --> FrustrationDetected : Frustration intent
+    GreetingDetected --> Responding
+    JokeDetected --> Responding
+    ThanksDetected --> Responding
+    FrustrationDetected --> Responding
+    Responding --> Listening : Response sent

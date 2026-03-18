@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NoMetrics : Model not evaluated
+    NoMetrics --> Evaluating : Model trained
+    Evaluating --> MetricsAvailable : Evaluation complete
+    MetricsAvailable --> Outdated : Model retrained
+    Outdated --> Evaluating : Re-evaluate
+    MetricsAvailable --> [*]

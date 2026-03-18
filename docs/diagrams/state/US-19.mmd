@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Medium : Default
+    Medium --> Low : Decrease sensitivity
+    Medium --> High : Increase sensitivity
+    Low --> Medium : Increase
+    High --> Medium : Decrease
+    Low --> High : Jump
+    High --> Low : Jump

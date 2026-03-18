@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> ClickAlert
+    ClickAlert --> FetchDetail : GET /api/alerts/{id}/
+    FetchDetail --> LoadingState
+    LoadingState --> DisplayDetail : Success
+    LoadingState --> ShowError : 404 Not Found
+    DisplayDetail --> ViewSourceIP
+    DisplayDetail --> ViewPayload
+    DisplayDetail --> ViewMITRE
+    DisplayDetail --> ViewGeoIP
+    ViewSourceIP --> [*]
+    ViewPayload --> [*]
+    ViewMITRE --> [*]
+    ViewGeoIP --> [*]

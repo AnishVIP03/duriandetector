@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> RandomForest : Default
+    RandomForest --> SVM : Switch model
+    RandomForest --> IsolationForest : Switch model
+    SVM --> RandomForest : Switch model
+    SVM --> IsolationForest : Switch model
+    IsolationForest --> RandomForest : Switch model
+    IsolationForest --> SVM : Switch model

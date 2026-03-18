@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>useWebSocket Hook
+    participant WS as Django Channels<br/>AlertConsumer
+    participant Celery as capture_packets_task
+    participant ML as IDSEngine.predict()
+    participant DB as PostgreSQL
+
+    FE->>WS: WebSocket CONNECT ws/alerts/
+    WS->>WS: connect() → self.channel_layer.group_add("alerts")
+    WS-->>FE: Connection established
+    Note over Celery,DB: Background packet capture running
+    Celery->>Celery: Scapy sniff(iface, prn=callback)
+    Celery->>ML: predict(features)
+    ML-->>Celery: {label, confidence, probabilities}
+    Celery->>Celery: _get_severity(label, confidence)
+    Celery->>DB: Alert.objects.create(type, severity, ...)
+    Celery->>Celery: _fanout_alert(alert)
+    Celery->>WS: channel_layer.group_send("alerts", alert_data)
+    WS->>WS: alert_message(event)
+    WS-->>FE: JSON {type, alert_id, severity, source_ip, ...}
+    FE-->>U: Toast notification with alert summary

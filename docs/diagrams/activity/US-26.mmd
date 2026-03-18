@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> NavigateToTeam
+    NavigateToTeam --> ClickInvite
+    ClickInvite --> EnterEmail : Invitee email
+    EnterEmail --> SelectRole : analyst/leader
+    SelectRole --> SendInvitation : POST /api/environments/{id}/invite/
+    SendInvitation --> InvitationSent
+    InvitationSent --> [*]

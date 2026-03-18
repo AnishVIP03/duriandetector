@@ -21,6 +21,21 @@ from .serializers import (
     AdminUserSerializer,
 )
 from .permissions import IsAdmin
+from apps.audit.models import AuditLog
+
+
+def _log_admin_action(request, action, target_user, metadata=None):
+    """Create an AuditLog entry for an admin action — US-56."""
+    AuditLog.objects.create(
+        user=request.user,
+        action=action,
+        target_type='CustomUser',
+        target_id=target_user.id,
+        ip_address=request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
+        or request.META.get('REMOTE_ADDR'),
+        user_agent=request.META.get('HTTP_USER_AGENT', ''),
+        metadata=metadata or {},
+    )
 
 
 class RegisterView(generics.CreateAPIView):
@@ -244,6 +259,7 @@ class AdminSuspendUserView(APIView):
                 return Response({'error': 'Cannot suspend an admin.'}, status=status.HTTP_403_FORBIDDEN)
             reason = request.data.get('reason', '')
             user.suspend(reason=reason)
+            _log_admin_action(request, 'suspend_user', user, {'reason': reason})
             return Response({'message': f'User {user.email} has been suspended.'})
         except CustomUser.DoesNotExist:
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -257,6 +273,7 @@ class AdminUnsuspendUserView(APIView):
         try:
             user = CustomUser.objects.get(id=user_id)
             user.unsuspend()
+            _log_admin_action(request, 'unsuspend_user', user)
             return Response({'message': f'User {user.email} has been unsuspended.'})
         except CustomUser.DoesNotExist:
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -274,6 +291,7 @@ class AdminResetPasswordView(APIView):
                 return Response({'error': 'new_password is required.'}, status=status.HTTP_400_BAD_REQUEST)
             user.set_password(new_password)
             user.save()
+            _log_admin_action(request, 'admin_reset_password', user)
             return Response({'message': f'Password for {user.email} has been reset.'})
         except CustomUser.DoesNotExist:
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -288,8 +306,12 @@ class AdminUpdateSubscriptionView(APIView):
             user = CustomUser.objects.get(id=user_id)
             new_role = request.data.get('role')
             if new_role and new_role in dict(CustomUser.Role.choices):
+                old_role = user.role
                 user.role = new_role
                 user.save(update_fields=['role'])
+                _log_admin_action(request, 'update_subscription', user, {
+                    'old_role': old_role, 'new_role': new_role,
+                })
                 return Response({
                     'message': f'User {user.email} role updated to {new_role}.',
                     'user': AdminUserSerializer(user).data,

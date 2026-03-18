@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>DemoPage
+    participant API as DRF<br/>DemoStartView
+    participant Task as _fanout_demo_alerts()
+    participant DB as PostgreSQL
+    participant WS as AlertConsumer
+
+    U->>FE: Click "Start Demo Simulation"
+    FE->>API: POST /api/demo/start/
+    API->>API: Generate ATTACK_PROFILES scenarios
+    API->>API: Select SOURCE_IPS with GeoIP data
+    loop For each simulated alert
+        API->>DB: Alert.objects.create(type, severity, source_ip, ...)
+        API->>Task: _fanout_demo_alerts(alert)
+        Task->>DB: Replicate to free_db, premium_db, exclusive_db
+    end
+    API->>WS: channel_layer.group_send("alerts", alert_data)
+    WS-->>FE: WebSocket alert notification
+    API-->>FE: 200 OK {alerts_created: count}
+    FE->>FE: DemoSummary(results)
+    FE-->>U: Display demo results with alert summary

@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>GeoIPMapPage
+    participant API as DRF<br/>GeoIPDataView
+    participant SER as GeoIPAlertSerializer
+    participant GeoIP as geoip.lookup_ip()
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to GeoIP Map page
+    FE->>API: GET /api/alerts/geoip/
+    API->>DB: Alert.objects.values("source_ip").distinct()
+    DB-->>API: Unique source IPs
+    loop For each source IP
+        API->>GeoIP: lookup_ip(source_ip)
+        GeoIP->>GeoIP: _is_private_ip(ip)
+        GeoIP->>GeoIP: _get_reader().city(ip)
+        GeoIP-->>API: {lat, lon, country, city}
+    end
+    API->>SER: GeoIPAlertSerializer(geoip_data, many=True)
+    SER-->>API: Serialized GeoIP points
+    API-->>FE: 200 OK {points: [...]}
+    FE-->>U: Render Leaflet 2D map with threat markers

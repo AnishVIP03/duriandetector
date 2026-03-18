@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor U as Team Leader
+    participant FE as React<br/>SubscriptionPage
+    participant API as DRF<br/>ManageTeamSubscriptionView
+    participant Perm as IsTeamLeader
+    participant Stripe as Stripe API
+    participant Router as TierDatabaseRouter
+    participant DB as PostgreSQL
+
+    U->>FE: Select new team plan, click "Upgrade Team"
+    FE->>API: POST /api/subscriptions/manage-team/ {plan: "exclusive"}
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed (Team Leader role)
+    API->>Stripe: stripe.PaymentIntent.create(amount * member_count)
+    Stripe-->>API: Payment confirmed
+    API->>DB: EnvironmentMembership.objects.filter(environment=env)
+    DB-->>API: All team members
+    loop For each team member
+        API->>Router: set_db_for_role("exclusive")
+        API->>DB: Migrate user to exclusive_db
+        API->>DB: UserSubscription.objects.update(plan="exclusive")
+    end
+    API-->>FE: 200 OK {new_plan, members_upgraded: count}
+    FE-->>U: Display "Team upgraded to Exclusive" confirmation

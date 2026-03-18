@@ -1,0 +1,38 @@
+%%{init: {'flowchart': {'curve': 'stepAfter', 'nodeSpacing': 30, 'rankSpacing': 40}}}%%
+flowchart LR
+    classDef startEnd fill:#000,stroke:#000,color:#fff
+    classDef decision fill:#FFD700,stroke:#B8860B,color:#000
+    classDef activity fill:#fff,stroke:#000,color:#000
+
+    Start((Start)):::startEnd
+    Start --> DisplayMain[Display<br/>DurianDetector<br/>Main Page]:::activity
+    DisplayMain --> D1{Action?}:::decision
+
+    D1 -->|View Plans| ViewPlans[View Subscription<br/>Plans]:::activity
+    ViewPlans --> BrowseTiers[Browse Free /<br/>Premium / Exclusive<br/>Tier Comparison]:::activity
+    BrowseTiers --> MA{More<br/>Actions<br/>to do}:::decision
+
+    D1 -->|Register| Register[Register<br/>Account]:::activity
+    Register --> EnterDetails[Enter Email &<br/>Password &<br/>Select Plan]:::activity
+    EnterDetails --> CreateAcc[Create Account<br/>in Tier Database]:::activity
+    CreateAcc --> MB{More<br/>Actions<br/>to do}:::decision
+
+    D1 -->|Create Environment| CreateEnv[Create<br/>Environment]:::activity
+    CreateEnv --> SelectIF[Select Network<br/>Interface]:::activity
+    SelectIF --> GenInvite[Generate Invite<br/>Code & Assign<br/>Owner Role]:::activity
+    GenInvite --> MC{More<br/>Actions<br/>to do}:::decision
+
+    D1 -->|Join Environment| JoinEnv[Join<br/>Environment]:::activity
+    JoinEnv --> EnterPIN[Enter Invitation<br/>PIN]:::activity
+    EnterPIN --> CreateMember[Create Environment<br/>Membership]:::activity
+    CreateMember --> MD{More<br/>Actions<br/>to do}:::decision
+
+    MA -->|Yes| DisplayMain
+    MB -->|Yes| DisplayMain
+    MC -->|Yes| DisplayMain
+    MD -->|Yes| DisplayMain
+
+    MA -->|No| E1((End)):::startEnd
+    MB -->|No| E2((End)):::startEnd
+    MC -->|No| E3((End)):::startEnd
+    MD -->|No| E4((End)):::startEnd

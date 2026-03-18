@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> NavigateToIncidents
+    NavigateToIncidents --> ClickCreateIncident
+    ClickCreateIncident --> FillIncidentForm : Title, description, severity
+    FillIncidentForm --> LinkAlerts : Attach related alerts
+    LinkAlerts --> SubmitIncident : POST /api/incidents/
+    SubmitIncident --> IncidentCreated
+    IncidentCreated --> DisplayIncidentList
+    DisplayIncidentList --> [*]

@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> NavigateToLogIngestion
+    NavigateToLogIngestion --> SelectFile : Drag and drop or browse
+    SelectFile --> ValidateFormat : JSON or CSV
+    ValidateFormat --> InvalidFormat : Unsupported file
+    InvalidFormat --> SelectFile
+    ValidateFormat --> UploadFile : POST /api/alerts/log-upload/
+    UploadFile --> ParseRecords
+    ParseRecords --> ImportRecords
+    ImportRecords --> ReportResults : imported/failed counts
+    ReportResults --> ViewHistory : GET /api/alerts/log-upload/history/
+    ViewHistory --> [*]

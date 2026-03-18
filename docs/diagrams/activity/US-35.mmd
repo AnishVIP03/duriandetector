@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> NavigateToSystemHealth
+    NavigateToSystemHealth --> FetchHealthData : GET /api/audit/health/
+    FetchHealthData --> DisplayDashboard
+    DisplayDashboard --> CheckDatabaseStatus
+    DisplayDashboard --> CheckRedisStatus
+    DisplayDashboard --> CheckCeleryStatus
+    DisplayDashboard --> CheckDiskSpace
+    CheckDatabaseStatus --> ViewDetails
+    CheckRedisStatus --> ViewDetails
+    CheckCeleryStatus --> ViewDetails
+    CheckDiskSpace --> ViewDetails
+    ViewDetails --> [*]

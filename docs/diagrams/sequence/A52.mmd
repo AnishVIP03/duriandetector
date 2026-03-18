@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor A as Administrator
+    participant FE as React<br/>AdminUsersPage
+    participant API as DRF<br/>AdminUpdateSubscriptionView
+    participant Audit as _log_admin_action()
+    participant Router as TierDatabaseRouter
+    participant Perm as IsAdmin
+    participant DB as PostgreSQL
+
+    A->>FE: Select user, choose new tier from dropdown
+    FE->>API: PATCH /api/accounts/admin/users/{id}/subscription/ {role: "exclusive"}
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed
+    API->>DB: CustomUser.objects.get(pk=id)
+    DB-->>API: User instance
+    API->>Router: set_db_for_role("exclusive")
+    API->>DB: Migrate user data to exclusive_db
+    API->>DB: user.role = "exclusive"
+    API->>DB: user.save()
+    DB-->>API: User updated
+    API->>Audit: _log_admin_action(admin, "modify_tier", target_user, new_role)
+    Audit->>DB: AuditLog.objects.create(...)
+    API-->>FE: 200 OK {user_id, new_role: "exclusive"}
+    FE-->>U: User tier updated in admin table

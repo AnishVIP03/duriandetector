@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>IncidentListPage
+    participant API1 as DRF<br/>IncidentNotesListView
+    participant API2 as DRF<br/>IncidentNoteCreateView
+    participant SER as IncidentNoteSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Open incident detail, view notes tab
+    FE->>API1: GET /api/incidents/{id}/notes/
+    API1->>DB: IncidentNote.objects.filter(incident=id)
+    DB-->>API1: QuerySet[IncidentNote]
+    API1->>SER: IncidentNoteSerializer(notes, many=True)
+    API1-->>FE: 200 OK {notes: [...]}
+    FE-->>U: Display existing investigation notes
+    U->>FE: Type note content, click "Add Note"
+    FE->>API2: POST /api/incidents/{id}/notes/create/ {content: "..."}
+    API2->>SER: IncidentNoteSerializer.validate(data)
+    API2->>DB: IncidentNote.objects.create(incident, author=user, content)
+    DB-->>API2: IncidentNote created
+    API2-->>FE: 201 Created {note}
+    FE-->>U: Note appended to investigation timeline

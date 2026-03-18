@@ -1,0 +1,73 @@
+%%{init: {'flowchart': {'curve': 'stepAfter', 'nodeSpacing': 30, 'rankSpacing': 40}}}%%
+flowchart LR
+    classDef startEnd fill:#000,stroke:#000,color:#fff
+    classDef decision fill:#FFD700,stroke:#B8860B,color:#000
+    classDef activity fill:#fff,stroke:#000,color:#000
+
+    Start((Start)):::startEnd
+
+    Start --> UserValid[User<br/>Validation]:::activity
+    UserValid --> AuthCheck{Login<br/>Failed}:::decision
+    AuthCheck -->|Yes| ForgotPW[Forgot Password]:::activity
+    ForgotPW --> ResetPW[Reset<br/>Password]:::activity
+    ResetPW --> UserValid
+    AuthCheck -->|No| Dashboard[Display Premium<br/>SOC Dashboard]:::activity
+    Dashboard --> D1{Action?}:::decision
+
+    D1 -->|Logout| Logout[Log out]:::activity
+    Logout --> EndL((End)):::startEnd
+
+    D1 -->|Incident Mgmt| IncSub{Incident<br/>action?}:::decision
+    IncSub -->|Create| CreateInc[Create Incident<br/>Set Severity &<br/>Link Alerts]:::activity
+    CreateInc --> MA{More<br/>Actions<br/>to do}:::decision
+    IncSub -->|Assign| AssignInc[Assign Incident<br/>to Team Member]:::activity
+    AssignInc --> MA
+    IncSub -->|Update Status| UpdateInc[Update Incident<br/>Status]:::activity
+    UpdateInc --> MA
+    IncSub -->|Add Notes| AddNotes[Add Investigation<br/>Notes]:::activity
+    AddNotes --> MA
+
+    D1 -->|ML Config| MLSub{ML<br/>action?}:::decision
+    MLSub -->|Select Model| SelectML[Select ML Model<br/>RF / SVM / IF]:::activity
+    SelectML --> MB{More<br/>Actions<br/>to do}:::decision
+    MLSub -->|Sensitivity| AdjustSens[Adjust Detection<br/>Sensitivity]:::activity
+    AdjustSens --> MB
+    MLSub -->|Thresholds| ConfigThresh[Configure Alert<br/>Thresholds]:::activity
+    ConfigThresh --> MB
+    MLSub -->|View Metrics| ViewMetrics[View ML Metrics<br/>Accuracy / F1]:::activity
+    ViewMetrics --> MB
+
+    D1 -->|Network| NetSub{Network<br/>action?}:::decision
+    NetSub -->|Capture Status| MonCapture[Monitor Packet<br/>Ingestion Status]:::activity
+    MonCapture --> MC{More<br/>Actions<br/>to do}:::decision
+    NetSub -->|Inspect Packets| InspectPkt[Inspect Live<br/>Packet Stream]:::activity
+    InspectPkt --> MC
+    NetSub -->|Traffic Filters| ConfigFilter[Configure Traffic<br/>Filter Rules]:::activity
+    ConfigFilter --> MC
+    NetSub -->|Upload Logs| UploadLogs[Upload CSV /<br/>JSON Log Files]:::activity
+    UploadLogs --> MC
+
+    D1 -->|Reports| ReportSub{Report<br/>action?}:::decision
+    ReportSub -->|Generate| GenReport[Generate Security<br/>Report]:::activity
+    GenReport --> MD{More<br/>Actions<br/>to do}:::decision
+    ReportSub -->|Export PDF| ExportPDF[Export Report<br/>as PDF]:::activity
+    ExportPDF --> MD
+
+    D1 -->|MITRE Heatmap| MitreMap[View MITRE<br/>ATT&CK Heatmap]:::activity
+    MitreMap --> MD
+
+    D1 -->|Custom Viz| CustomViz[Create Custom<br/>Visualisations]:::activity
+    CustomViz --> MD
+
+    D1 -->|DurianBot Enhanced| ChatBot[Use DurianBot<br/>Enhanced<br/>ATT&CK-Aware]:::activity
+    ChatBot --> MD
+
+    MA -->|Yes| Dashboard
+    MB -->|Yes| Dashboard
+    MC -->|Yes| Dashboard
+    MD -->|Yes| Dashboard
+
+    MA -->|No| E1((End)):::startEnd
+    MB -->|No| E2((End)):::startEnd
+    MC -->|No| E3((End)):::startEnd
+    MD -->|No| E4((End)):::startEnd

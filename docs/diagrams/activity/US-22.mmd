@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> NavigateToReports
+    NavigateToReports --> SelectReportParams : Date range, type
+    SelectReportParams --> SubmitGenerate : POST /api/reports/generate/
+    SubmitGenerate --> ProcessingReport
+    ProcessingReport --> GeneratePDF : WeasyPrint
+    GeneratePDF --> ReportReady
+    ReportReady --> DisplayInList
+    DisplayInList --> [*]

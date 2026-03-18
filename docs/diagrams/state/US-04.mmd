@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NotMember
+    NotMember --> Joining : Enter PIN
+    Joining --> InvalidCode : Wrong PIN
+    InvalidCode --> NotMember
+    Joining --> Member : Valid PIN
+    Member --> [*]

@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Blocked
+    Blocked --> Unblocking : Unblock clicked
+    Unblocking --> Unblocked : Confirmed
+    Unblocking --> Blocked : Cancelled
+    Unblocked --> [*]

@@ -1,0 +1,21 @@
+sequenceDiagram
+    actor U as Free User
+    participant FE as React<br/>BlockedIPsPage
+    participant API1 as DRF<br/>BlockedIPListView
+    participant API2 as DRF<br/>UnblockIPByIdView
+    participant SER as BlockedIPSerializer
+    participant DB as PostgreSQL
+
+    U->>FE: Navigate to Blocked IPs page
+    FE->>API1: GET /api/blocked-ips/
+    API1->>DB: BlockedIP.objects.all()
+    DB-->>API1: QuerySet[BlockedIP]
+    API1->>SER: BlockedIPSerializer(ips, many=True)
+    API1-->>FE: 200 OK {blocked_ips: [...]}
+    FE-->>U: Display blocked IPs table
+    U->>FE: Click "Unblock" on blocked IP
+    FE->>API2: POST /api/blocked-ips/{id}/unblock/
+    API2->>DB: BlockedIP.objects.get(pk=id).delete()
+    DB-->>API2: Deleted
+    API2-->>FE: 200 OK "IP unblocked"
+    FE-->>U: IP removed from blocked list

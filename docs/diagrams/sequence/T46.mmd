@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor U as Team Leader
+    participant FE as React<br/>TeamPage
+    participant API as DRF<br/>RemoveMemberView
+    participant Perm as IsTeamLeader
+    participant DB as PostgreSQL
+
+    U->>FE: Click "Remove" on team member
+    FE->>FE: Show confirmation dialog
+    U->>FE: Confirm removal
+    FE->>API: DELETE /api/environments/{env_id}/members/{user_id}/remove/
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed (Team Leader role)
+    API->>DB: EnvironmentMembership.objects.get(user=user_id, environment=env)
+    DB-->>API: Membership instance
+    API->>DB: membership.delete()
+    DB-->>API: Membership removed
+    API-->>FE: 204 No Content
+    FE-->>U: Member removed from team list

@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Setup
+    Setup --> DatabasesReady : 3 DBs created
+    DatabasesReady --> UsersSeeded : Demo users created
+    UsersSeeded --> ServicesRunning : All services started
+    ServicesRunning --> DemoActive : Clients connected
+    DemoActive --> DemoStopped : Demo ends
+    DemoStopped --> [*]

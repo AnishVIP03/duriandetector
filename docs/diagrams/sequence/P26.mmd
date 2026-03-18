@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor U as Premium User
+    participant FE as React<br/>MLConfigPage
+    participant API as DRF<br/>MLConfigView
+    participant SER as MLModelConfigSerializer
+    participant Perm as IsPremiumOrAbove
+    participant DB as PostgreSQL
+
+    U->>FE: Select model type from dropdown (random_forest / svm / isolation_forest)
+    FE->>API: PATCH /api/ml/config/ {model_type: "svm"}
+    API->>Perm: has_permission(request)
+    Perm-->>API: Allowed
+    API->>DB: MLModelConfig.objects.get(environment=env)
+    DB-->>API: MLModelConfig instance
+    API->>SER: MLModelConfigSerializer.validate(data)
+    API->>DB: config.model_type = "svm"
+    API->>DB: config.save()
+    DB-->>API: Config updated
+    API-->>FE: 200 OK {model_type: "svm", sensitivity, threshold}
+    FE-->>U: ML model selection updated
