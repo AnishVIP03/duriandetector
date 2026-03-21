@@ -2,7 +2,7 @@
  * Main Dashboard — US-07, US-24.
  * SOC-style dark dashboard with real-time metrics, charts, and live feed.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -102,18 +102,59 @@ export default function DashboardPage() {
   const [liveAlerts, setLiveAlerts] = useState([]);
   const [captureRunning, setCaptureRunning] = useState(false);
 
-  // Real-time alerts
+  // Throttle toast notifications (max 1 every 3 seconds)
+  const lastToastRef = useRef(0);
+
+  // Real-time alerts with toast notifications
   useWebSocket('ws/alerts/', {
     onMessage: (data) => {
       setLiveAlerts((prev) => [data, ...prev].slice(0, 20));
+
+      // Re-fetch stats so counters update in real-time
+      fetchStats();
+
+      // Throttled toast notification
+      const now = Date.now();
+      if (now - lastToastRef.current > 3000) {
+        lastToastRef.current = now;
+        const severityIcons = {
+          critical: '🔴',
+          high: '🟠',
+          medium: '🟡',
+          low: '🔵',
+        };
+        const icon = severityIcons[data.severity] || '⚪';
+        toast(
+          `${data.alert_type?.replace('_', ' ').toUpperCase()} detected from ${data.src_ip || 'unknown'}`,
+          {
+            icon,
+            duration: 3000,
+            style: {
+              background: data.severity === 'critical' ? '#991b1b' : '#1e293b',
+              color: '#fff',
+              border: data.severity === 'critical' ? '1px solid #ef4444' : '1px solid #334155',
+            },
+          }
+        );
+      }
     },
   });
 
   const fetchStats = useCallback(async () => {
     try {
-      const { data } = await alertsAPI.getStats();
-      setStats(data);
-      setCaptureRunning(data.capture_running);
+      const [statsRes, captureRes] = await Promise.allSettled([
+        alertsAPI.getStats(),
+        captureAPI.getStatus(),
+      ]);
+      if (statsRes.status === 'fulfilled') {
+        setStats(statsRes.value.data);
+      }
+      // Use capture status endpoint as source of truth for button state
+      if (captureRes.status === 'fulfilled') {
+        setCaptureRunning(captureRes.value.data.is_capturing);
+      } else if (statsRes.status === 'fulfilled') {
+        setCaptureRunning(statsRes.value.data.capture_running);
+      }
     } catch {
       // API may not be available yet
     } finally {
@@ -123,7 +164,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 30000); // Refresh every 30s
+    const interval = setInterval(fetchStats, 10000); // Refresh every 10s
     return () => clearInterval(interval);
   }, [fetchStats]);
 
@@ -134,11 +175,18 @@ export default function DashboardPage() {
 
   const handleStartCapture = async () => {
     try {
-      await captureAPI.start({ duration: 300 });
+      await captureAPI.start({ duration: 3600 });
       setCaptureRunning(true);
       toast.success('Packet capture started!');
+      fetchStats();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to start capture');
+      // If already running, just sync the state
+      if (err.response?.status === 409) {
+        setCaptureRunning(true);
+        toast('Capture is already running', { icon: '🟢' });
+      } else {
+        toast.error(err.response?.data?.error || 'Failed to start capture');
+      }
     }
   };
 
@@ -147,6 +195,7 @@ export default function DashboardPage() {
       await captureAPI.stop();
       setCaptureRunning(false);
       toast.success('Capture stopped');
+      fetchStats();
     } catch {
       toast.error('Failed to stop capture');
     }

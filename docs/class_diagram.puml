@@ -1,0 +1,465 @@
+@startuml DurianDetector_ClassDiagram
+
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam classFontSize 11
+skinparam classAttributeFontSize 10
+skinparam dpi 200
+skinparam nodesep 60
+skinparam ranksep 50
+skinparam padding 4
+
+left to right direction
+
+title DurianDetector — Class Diagram\nFYP-26-S1-08 · Django ORM Database Schema & Relationships
+
+' ============================================
+'  CORE (center hub)
+' ============================================
+package "Accounts" as pkg_acc #E8F0FE {
+  entity "accounts_customuser" as CU {
+    * **PK** id : int
+    --
+    email : varchar(255)
+    username : varchar(150)
+    password : varchar(128)
+    role : varchar(20)
+    team_role : varchar(20)
+    is_suspended : boolean
+    last_login_ip : varchar(45)
+    created_at : datetime
+  }
+
+  entity "accounts_passwordresettoken" as PRT {
+    * **PK** id : int
+    --
+    **FK** user_id : int
+    token : uuid
+    expires_at : datetime
+    used : boolean
+  }
+}
+
+package "Environments" as pkg_env #E8F0FE {
+  entity "environments_environment" as ENV {
+    * **PK** id : int
+    --
+    **FK** owner_id : int
+    name : varchar(100)
+    description : text
+    organisation : varchar(100)
+    pin : varchar(6)
+    invitation_code : uuid
+    network_interface : varchar(50)
+  }
+
+  entity "environments_membership" as EM {
+    * **PK** id : int
+    --
+    **FK** user_id : int
+    **FK** environment_id : int
+    **FK** invited_by_id : int
+    role : varchar(20)
+    joined_at : datetime
+  }
+}
+
+' ============================================
+'  SUBSCRIPTIONS
+' ============================================
+package "Subscriptions" as pkg_sub #FFF3E0 {
+  entity "subscriptions_plan" as SP {
+    * **PK** id : int
+    --
+    name : varchar(20)
+    display_name : varchar(50)
+    price : decimal
+    billing_cycle : varchar(20)
+    features : json
+    is_active : boolean
+  }
+
+  entity "subscriptions_usersubscription" as SUS {
+    * **PK** id : int
+    --
+    **FK** user_id : int
+    **FK** plan_id : int
+    started_at : datetime
+    expires_at : datetime
+    is_active : boolean
+  }
+}
+
+' ============================================
+'  ALERTS
+' ============================================
+package "Alerts" as pkg_alert #FFEBEE {
+  entity "alerts_alert" as AA {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    **FK** blocked_by_id : int
+    src_ip : varchar(45)
+    dst_ip : varchar(45)
+    src_port : int
+    dst_port : int
+    protocol : varchar(10)
+    alert_type : varchar(30)
+    severity : varchar(10)
+    confidence_score : float
+    raw_payload : text
+    is_blocked : boolean
+    timestamp : datetime
+  }
+
+  entity "alerts_blockedip" as ABI {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    **FK** blocked_by_id : int
+    ip_address : varchar(45)
+    reason : text
+    is_active : boolean
+  }
+
+  entity "alerts_whitelistedip" as AWI {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    **FK** added_by_id : int
+    ip_address : varchar(45)
+    is_active : boolean
+  }
+
+  entity "alerts_trafficfilterrule" as ATF {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    **FK** created_by_id : int
+    name : varchar(100)
+    filter_type : varchar(20)
+    action : varchar(20)
+    is_active : boolean
+  }
+
+  entity "alerts_logupload" as ALU {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    **FK** uploaded_by_id : int
+    file_name : varchar(255)
+    file_format : varchar(10)
+    records_total : int
+    status : varchar(20)
+  }
+}
+
+' ============================================
+'  INCIDENTS
+' ============================================
+package "Incidents" as pkg_inc #E8F5E9 {
+  entity "incidents_incident" as II {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    **FK** created_by_id : int
+    **FK** assigned_to_id : int
+    title : varchar(200)
+    description : text
+    severity : varchar(10)
+    status : varchar(15)
+    resolved_at : datetime
+  }
+
+  entity "incidents_incidentnote" as IIN {
+    * **PK** id : int
+    --
+    **FK** incident_id : int
+    **FK** author_id : int
+    content : text
+    created_at : datetime
+  }
+
+  entity "incidents_incident_alerts" as IIA {
+    * **PK** id : int
+    --
+    **FK** incident_id : int
+    **FK** alert_id : int
+  }
+}
+
+' ============================================
+'  ATTACK CHAINS
+' ============================================
+package "Attack Chains" as pkg_ac #F3E5F5 {
+  entity "attack_chains_attackchain" as AC {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    src_ip : varchar(45)
+    chain_type : varchar(20)
+    risk_score : float
+    status : varchar(10)
+  }
+
+  entity "attackchain_alerts" as ACA {
+    * **PK** id : int
+    --
+    **FK** attackchain_id : int
+    **FK** alert_id : int
+  }
+
+  entity "attackchain_mitre_techniques" as ACMT {
+    * **PK** id : int
+    --
+    **FK** attackchain_id : int
+    **FK** mitretechnique_id : int
+  }
+
+  entity "attack_chains_riskscore" as ACR {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    score : float
+    calculated_at : datetime
+    breakdown : json
+  }
+}
+
+' ============================================
+'  MITRE
+' ============================================
+package "MITRE" as pkg_mitre #FFFDE7 {
+  entity "mitre_mitretactic" as MT {
+    * **PK** id : int
+    --
+    tactic_id : varchar(20)
+    name : varchar(100)
+    description : text
+  }
+
+  entity "mitre_mitretechnique" as MTQ {
+    * **PK** id : int
+    --
+    **FK** tactic_id : int
+    technique_id : varchar(20)
+    name : varchar(200)
+    description : text
+    detection_hint : text
+    mitigation : text
+    maps_to_alert_types : json
+  }
+}
+
+' ============================================
+'  AUDIT
+' ============================================
+package "Audit" as pkg_audit #ECEFF1 {
+  entity "audit_auditlog" as AUL {
+    * **PK** id : int
+    --
+    **FK** user_id : int
+    **FK** environment_id : int
+    action : varchar(100)
+    target_type : varchar(100)
+    ip_address : varchar(45)
+    timestamp : datetime
+  }
+
+  entity "audit_systemhealth" as ASH {
+    * **PK** id : int
+    --
+    checked_at : datetime
+    celery_status : varchar(20)
+    redis_status : varchar(20)
+    postgres_status : varchar(20)
+    cpu_percent : float
+    memory_percent : float
+  }
+}
+
+' ============================================
+'  CHATBOT
+' ============================================
+package "Chatbot" as pkg_chat #E0F7FA {
+  entity "chatbot_chatsession" as CS {
+    * **PK** id : int
+    --
+    **FK** user_id : int
+    **FK** environment_id : int
+    title : varchar(200)
+    created_at : datetime
+  }
+
+  entity "chatbot_chatmessage" as CM {
+    * **PK** id : int
+    --
+    **FK** session_id : int
+    role : varchar(10)
+    content : text
+    timestamp : datetime
+  }
+}
+
+' ============================================
+'  ML ENGINE
+' ============================================
+package "ML Engine" as pkg_ml #FBE9E7 {
+  entity "ml_engine_mlmodelconfig" as MLC {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    model_type : varchar(20)
+    sensitivity : varchar(10)
+    detection_threshold : float
+    is_active : boolean
+    trained_at : datetime
+  }
+
+  entity "ml_engine_mlmodelmetrics" as MLM {
+    * **PK** id : int
+    --
+    **FK** config_id : int
+    accuracy : float
+    precision : float
+    recall : float
+    f1_score : float
+    training_samples : int
+  }
+}
+
+' ============================================
+'  NETWORK CAPTURE
+' ============================================
+package "Network Capture" as pkg_net #E8EAF6 {
+  entity "network_capture_session" as NCS {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    **FK** started_by_id : int
+    interface : varchar(50)
+    started_at : datetime
+    status : varchar(10)
+    packets_captured : int
+  }
+
+  entity "network_capture_feature" as NCF {
+    * **PK** id : int
+    --
+    **FK** session_id : int
+    timestamp : datetime
+    src_ip / dst_ip : varchar(45)
+    protocol : varchar(10)
+    packet_length : int
+    features_json : json
+  }
+}
+
+' ============================================
+'  REPORTS
+' ============================================
+package "Reports" as pkg_rep #F1F8E9 {
+  entity "reports_report" as RR {
+    * **PK** id : int
+    --
+    **FK** environment_id : int
+    **FK** created_by_id : int
+    title : varchar(200)
+    report_type : varchar(20)
+    content : json
+    pdf_file : file
+    created_at : datetime
+  }
+}
+
+' ============================================
+'  THREATS
+' ============================================
+package "Threats" as pkg_threat #FCE4EC {
+  entity "threats_threatintelligence" as TI {
+    * **PK** id : int
+    --
+    ip_address : varchar(45)
+    domain : varchar(255)
+    threat_type : varchar(50)
+    source : varchar(100)
+    confidence : float
+    is_active : boolean
+  }
+}
+
+
+' ============================================
+'  RELATIONSHIPS
+' ============================================
+
+' -- Accounts internal --
+CU ||--o{ PRT : "user_id"
+
+' -- Environment ownership --
+CU ||--o{ ENV : "owner_id"
+
+' -- Membership --
+CU ||--o{ EM : "user_id"
+ENV ||--o{ EM : "environment_id"
+
+' -- Subscriptions --
+CU ||--o{ SUS : "user_id"
+SP ||--o{ SUS : "plan_id"
+
+' -- Alerts → Environment --
+ENV ||--o{ AA : "environment_id"
+ENV ||--o{ ABI : "environment_id"
+ENV ||--o{ AWI : "environment_id"
+ENV ||--o{ ATF : "environment_id"
+ENV ||--o{ ALU : "environment_id"
+
+' -- Alerts → User --
+CU ||--o{ AA : "blocked_by_id"
+CU ||--o{ ABI : "blocked_by_id"
+CU ||--o{ AWI : "added_by_id"
+CU ||--o{ ATF : "created_by_id"
+CU ||--o{ ALU : "uploaded_by_id"
+
+' -- Incidents --
+ENV ||--o{ II : "environment_id"
+CU ||--o{ II : "created_by_id"
+II ||--o{ IIN : "incident_id"
+CU ||--o{ IIN : "author_id"
+II ||--o{ IIA : "incident_id"
+AA ||--o{ IIA : "alert_id"
+
+' -- Attack Chains --
+ENV ||--o{ AC : "environment_id"
+AC ||--o{ ACA : "attackchain_id"
+AA ||--o{ ACA : "alert_id"
+AC ||--o{ ACMT : "attackchain_id"
+MTQ ||--o{ ACMT : "mitretechnique_id"
+ENV ||--o{ ACR : "environment_id"
+
+' -- MITRE --
+MT ||--o{ MTQ : "tactic_id"
+
+' -- Audit --
+CU ||--o{ AUL : "user_id"
+ENV ||--o{ AUL : "environment_id"
+
+' -- Chatbot --
+CU ||--o{ CS : "user_id"
+ENV ||--o{ CS : "environment_id"
+CS ||--o{ CM : "session_id"
+
+' -- ML Engine --
+ENV ||--o{ MLC : "environment_id"
+MLC ||--o{ MLM : "config_id"
+
+' -- Network Capture --
+ENV ||--o{ NCS : "environment_id"
+CU ||--o{ NCS : "started_by_id"
+NCS ||--o{ NCF : "session_id"
+
+' -- Reports --
+ENV ||--o{ RR : "environment_id"
+CU ||--o{ RR : "created_by_id"
+
+@enduml

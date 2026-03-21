@@ -14,8 +14,7 @@ from apps.accounts.permissions import SubscriptionRequired
 
 class StartCaptureView(APIView):
     """Start a new packet capture session."""
-    permission_classes = [permissions.IsAuthenticated, SubscriptionRequired]
-    required_tier = 'premium'
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         serializer = StartCaptureSerializer(data=request.data)
@@ -131,13 +130,15 @@ class CaptureStatusView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Current running session
+        current = CaptureSession.objects.filter(
+            environment=membership.environment, status='running'
+        ).order_by('-started_at').first()
+
         # Get latest sessions
         sessions = CaptureSession.objects.filter(
             environment=membership.environment
         ).order_by('-started_at')[:10]
-
-        # Current running session
-        current = sessions.filter(status='running').first() if sessions else None
 
         return Response({
             'current_session': CaptureSessionSerializer(current).data if current else None,

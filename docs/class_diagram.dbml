@@ -1,0 +1,385 @@
+// DurianDetector — Class Diagram
+// FYP-26-S1-08 · Django ORM Database Schema & Relationships
+
+// ═══════════════════════════════════
+//  ACCOUNTS
+// ═══════════════════════════════════
+
+Table accounts_customuser {
+  id int [pk]
+  email varchar(255)
+  username varchar(150)
+  password varchar(128)
+  role varchar(20)
+  team_role varchar(20)
+  is_suspended boolean
+  suspended_at datetime
+  suspended_reason text
+  last_login_ip varchar(45)
+  created_at datetime
+  updated_at datetime
+}
+
+Table accounts_passwordresettoken {
+  id int [pk]
+  user_id int [ref: > accounts_customuser.id]
+  token uuid
+  expires_at datetime
+  used boolean
+  created_at datetime
+}
+
+// ═══════════════════════════════════
+//  SUBSCRIPTIONS
+// ═══════════════════════════════════
+
+Table subscriptions_plan {
+  id int [pk]
+  name varchar(20)
+  display_name varchar(50)
+  price decimal
+  billing_cycle varchar(20)
+  features json
+  is_active boolean
+  sort_order int
+}
+
+Table subscriptions_usersubscription {
+  id int [pk]
+  user_id int [ref: > accounts_customuser.id]
+  plan_id int [ref: > subscriptions_plan.id]
+  started_at datetime
+  expires_at datetime
+  is_active boolean
+}
+
+// ═══════════════════════════════════
+//  ENVIRONMENTS
+// ═══════════════════════════════════
+
+Table environments_environment {
+  id int [pk]
+  owner_id int [ref: > accounts_customuser.id]
+  name varchar(100)
+  description text
+  organisation varchar(100)
+  pin varchar(6)
+  invitation_code uuid
+  network_interface varchar(50)
+  created_at datetime
+}
+
+Table environments_membership {
+  id int [pk]
+  user_id int [ref: > accounts_customuser.id]
+  environment_id int [ref: > environments_environment.id]
+  invited_by_id int [ref: > accounts_customuser.id]
+  role varchar(20)
+  joined_at datetime
+}
+
+// ═══════════════════════════════════
+//  ALERTS
+// ═══════════════════════════════════
+
+Table alerts_alert {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  blocked_by_id int [ref: > accounts_customuser.id]
+  src_ip varchar(45)
+  dst_ip varchar(45)
+  src_port int
+  dst_port int
+  protocol varchar(10)
+  alert_type varchar(30)
+  severity varchar(10)
+  confidence_score float
+  raw_payload text
+  latitude float
+  longitude float
+  country_city varchar
+  is_blocked boolean
+  ml_model_used varchar(30)
+  mitre_tactic varchar(50)
+  mitre_technique_id varchar(20)
+  timestamp datetime
+}
+
+Table alerts_blockedip {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  blocked_by_id int [ref: > accounts_customuser.id]
+  ip_address varchar(45)
+  reason text
+  blocked_at datetime
+  unblocked_at datetime
+  is_active boolean
+}
+
+Table alerts_whitelistedip {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  added_by_id int [ref: > accounts_customuser.id]
+  ip_address varchar(45)
+  reason text
+  is_active boolean
+  created_at datetime
+}
+
+Table alerts_trafficfilterrule {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  created_by_id int [ref: > accounts_customuser.id]
+  name varchar(100)
+  filter_type varchar(20)
+  value varchar(200)
+  action varchar(20)
+  traffic_category varchar(20)
+  threshold_count int
+  is_active boolean
+  created_at datetime
+}
+
+Table alerts_logupload {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  uploaded_by_id int [ref: > accounts_customuser.id]
+  file_name varchar(255)
+  file_format varchar(10)
+  records_total int
+  records_imported int
+  status varchar(20)
+  uploaded_at datetime
+}
+
+// ═══════════════════════════════════
+//  MITRE
+// ═══════════════════════════════════
+
+Table mitre_mitretactic {
+  id int [pk]
+  tactic_id varchar(20)
+  name varchar(100)
+  description text
+}
+
+Table mitre_mitretechnique {
+  id int [pk]
+  tactic_id int [ref: > mitre_mitretactic.id]
+  technique_id varchar(20)
+  name varchar(200)
+  description text
+  detection_hint text
+  mitigation text
+  maps_to_alert_types json
+}
+
+// ═══════════════════════════════════
+//  INCIDENTS
+// ═══════════════════════════════════
+
+Table incidents_incident {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  created_by_id int [ref: > accounts_customuser.id]
+  assigned_to_id int [ref: > accounts_customuser.id]
+  title varchar(200)
+  description text
+  severity varchar(10)
+  status varchar(15)
+  resolved_at datetime
+  created_at datetime
+  updated_at datetime
+}
+
+Table incidents_incidentnote {
+  id int [pk]
+  incident_id int [ref: > incidents_incident.id]
+  author_id int [ref: > accounts_customuser.id]
+  content text
+  created_at datetime
+}
+
+Table incidents_incident_alerts {
+  id int [pk]
+  incident_id int [ref: > incidents_incident.id]
+  alert_id int [ref: > alerts_alert.id]
+}
+
+// ═══════════════════════════════════
+//  ATTACK CHAINS
+// ═══════════════════════════════════
+
+Table attack_chains_attackchain {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  src_ip varchar(45)
+  chain_type varchar(20)
+  risk_score float
+  status varchar(10)
+  started_at datetime
+  last_seen_at datetime
+}
+
+Table attackchain_alerts {
+  id int [pk]
+  attackchain_id int [ref: > attack_chains_attackchain.id]
+  alert_id int [ref: > alerts_alert.id]
+}
+
+Table attackchain_mitre_techniques {
+  id int [pk]
+  attackchain_id int [ref: > attack_chains_attackchain.id]
+  mitretechnique_id int [ref: > mitre_mitretechnique.id]
+}
+
+Table attack_chains_riskscore {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  score float
+  calculated_at datetime
+  breakdown json
+}
+
+// ═══════════════════════════════════
+//  ML ENGINE
+// ═══════════════════════════════════
+
+Table ml_engine_mlmodelconfig {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  model_type varchar(20)
+  sensitivity varchar(10)
+  detection_threshold float
+  alert_threshold json
+  model_file_path varchar(255)
+  is_active boolean
+  trained_at datetime
+}
+
+Table ml_engine_mlmodelmetrics {
+  id int [pk]
+  config_id int [ref: > ml_engine_mlmodelconfig.id]
+  accuracy float
+  precision float
+  recall float
+  f1_score float
+  training_samples int
+  evaluated_at datetime
+}
+
+// ═══════════════════════════════════
+//  NETWORK CAPTURE
+// ═══════════════════════════════════
+
+Table network_capture_session {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  started_by_id int [ref: > accounts_customuser.id]
+  interface varchar(50)
+  started_at datetime
+  stopped_at datetime
+  status varchar(10)
+  packets_captured int
+  alerts_generated int
+}
+
+Table network_capture_feature {
+  id int [pk]
+  session_id int [ref: > network_capture_session.id]
+  timestamp datetime
+  src_ip_dst_ip varchar(45)
+  src_port_dst_port int
+  protocol varchar(10)
+  packet_length int
+  ttl int
+  flags varchar(20)
+  inter_arrival_time float
+  features_json json
+}
+
+// ═══════════════════════════════════
+//  AUDIT
+// ═══════════════════════════════════
+
+Table audit_auditlog {
+  id int [pk]
+  user_id int [ref: > accounts_customuser.id]
+  environment_id int [ref: > environments_environment.id]
+  action varchar(100)
+  target_type varchar(100)
+  target_id varchar(100)
+  ip_address varchar(45)
+  user_agent varchar(255)
+  metadata json
+  timestamp datetime
+}
+
+Table audit_systemhealth {
+  id int [pk]
+  checked_at datetime
+  celery_status varchar(20)
+  redis_status varchar(20)
+  postgres_status varchar(20)
+  capture_sessions_active int
+  alerts_last_hour int
+  disk_usage_percent float
+  cpu_percent float
+  memory_percent float
+}
+
+// ═══════════════════════════════════
+//  CHATBOT
+// ═══════════════════════════════════
+
+Table chatbot_chatsession {
+  id int [pk]
+  user_id int [ref: > accounts_customuser.id]
+  environment_id int [ref: > environments_environment.id]
+  title varchar(200)
+  created_at datetime
+  updated_at datetime
+}
+
+Table chatbot_chatmessage {
+  id int [pk]
+  session_id int [ref: > chatbot_chatsession.id]
+  role varchar(10)
+  content text
+  timestamp datetime
+}
+
+// ═══════════════════════════════════
+//  REPORTS
+// ═══════════════════════════════════
+
+Table reports_report {
+  id int [pk]
+  environment_id int [ref: > environments_environment.id]
+  created_by_id int [ref: > accounts_customuser.id]
+  title varchar(200)
+  report_type varchar(20)
+  date_from_date_to date
+  content json
+  pdf_file file
+  created_at datetime
+}
+
+// ═══════════════════════════════════
+//  THREATS
+// ═══════════════════════════════════
+
+Table threats_threatintelligence {
+  id int [pk]
+  ip_address varchar(45)
+  domain varchar(255)
+  threat_type varchar(50)
+  source varchar(100)
+  confidence float
+  last_seen datetime
+  description text
+  tags json
+  mitre_tactic varchar(50)
+  mitre_technique varchar(50)
+  is_active boolean
+}

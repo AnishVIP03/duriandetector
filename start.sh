@@ -75,17 +75,17 @@ if ! $PYTHON -c "import django" 2>/dev/null; then
 fi
 echo -e "  ✓ Backend dependencies ready"
 
-# ─── Run migrations ───
+# ─── Run migrations (with timeout to prevent hanging) ───
 echo -e "${BLUE}[4/6]${NC} Running database migrations..."
 cd "$BACKEND_DIR"
 MIGRATE_OK=true
 for DB in default free_db premium_db exclusive_db; do
-    $PYTHON manage.py migrate --database=$DB -v 0 2>/dev/null || MIGRATE_OK=false
+    timeout 15 $PYTHON manage.py migrate --database=$DB -v 0 2>/dev/null || MIGRATE_OK=false
 done
 if [ "$MIGRATE_OK" = true ]; then
     echo -e "  ✓ All databases ready"
 else
-    echo -e "  ${YELLOW}Some migrations had issues (databases may already be up to date)${NC}"
+    echo -e "  ${YELLOW}Some migrations had issues (databases may already be up to date — skipping)${NC}"
 fi
 
 # ─── Install frontend deps if needed ───
@@ -132,7 +132,7 @@ echo ""
 
 # Start Django backend
 cd "$BACKEND_DIR"
-daphne -b 127.0.0.1 -p 8000 config.asgi:application &
+daphne -b 0.0.0.0 -p 8000 config.asgi:application &
 BACKEND_PID=$!
 echo -e "  ${GREEN}✓${NC} Backend  → ${BOLD}http://127.0.0.1:8000${NC}  (PID: $BACKEND_PID)"
 
@@ -157,9 +157,11 @@ else
     echo -e "  ${RED}✗${NC} Celery   → Failed to start (check /tmp/celery.log)"
 fi
 
-# Start Vite frontend
+# Build & serve frontend (production mode = faster page loads)
 cd "$FRONTEND_DIR"
-npm run dev -- --port 5173 &
+echo -e "  ${YELLOW}Building frontend for production...${NC}"
+npm run build 2>/dev/null
+npx vite preview --port 5173 &
 FRONTEND_PID=$!
 echo -e "  ${GREEN}✓${NC} Frontend → ${BOLD}http://localhost:5173${NC}   (PID: $FRONTEND_PID)"
 

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DurianDetector System Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: white;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    padding: 50px 60px;
+    color: #1a1a1a;
+  }
+  h1 {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 50px;
+    text-transform: uppercase;
+  }
+  .diagram {
+    position: relative;
+    width: 1500px;
+    height: 1300px;
+    margin: 0 auto;
+  }
+
+  /* ── Group containers ── */
+  .group {
+    position: absolute;
+    border: 2.5px dashed #888;
+    border-radius: 12px;
+    background: rgba(248,248,248,0.4);
+  }
+  .group-title {
+    position: absolute;
+    top: -13px;
+    left: 20px;
+    background: white;
+    padding: 2px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #333;
+    border-radius: 4px;
+  }
+
+  /* ── Component boxes ── */
+  .node {
+    position: absolute;
+    border: 2px solid;
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    background: white;
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s;
+    min-width: 140px;
+  }
+  .node:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .node .title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .node .desc {
+    font-size: 10.5px;
+    color: #666;
+    line-height: 1.5;
+    display: block;
+  }
+  .node .icon {
+    font-size: 28px;
+    margin-bottom: 4px;
+    display: block;
+    line-height: 1;
+  }
+
+  /* Color themes */
+  .t-ml      { border-color: #e65100; background: linear-gradient(135deg, #fff8e1, #fff3e0); }
+  .t-ml .title { color: #bf360c; }
+  .t-capture { border-color: #2e7d32; background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
+  .t-capture .title { color: #1b5e20; }
+  .t-ext     { border-color: #6a1b9a; background: linear-gradient(135deg, #f3e5f5, #e1bee7); }
+  .t-ext .title { color: #4a148c; }
+  .t-back    { border-color: #0d47a1; background: linear-gradient(135deg, #e3f2fd, #bbdefb); }
+  .t-back .title { color: #0d47a1; }
+  .t-data    { border-color: #b71c1c; background: linear-gradient(135deg, #ffebee, #ffcdd2); }
+  .t-data .title { color: #b71c1c; }
+  .t-front   { border-color: #00695c; background: linear-gradient(135deg, #e0f2f1, #b2dfdb); }
+  .t-front .title { color: #004d40; }
+  .t-neutral { border-color: #546e7a; background: linear-gradient(135deg, #eceff1, #cfd8dc); }
+  .t-neutral .title { color: #37474f; }
+
+  /* ── SVG arrows ── */
+  svg.arrows {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ── Arrow labels ── */
+  .lbl {
+    position: absolute;
+    font-size: 11px;
+    color: #555;
+    font-weight: 600;
+    z-index: 3;
+    background: white;
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<h1>8. System Architecture</h1>
+
+<div class="diagram">
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!--  ROW 1: ML ENGINE  |  PACKET CAPTURE  |  EXTERNAL SERVICES  -->
+  <!-- ════════════════════════════════════════════════ -->
+
+  <!-- ML Detection Engine -->
+  <div class="group" style="left:0; top:0; width:500px; height:370px;">
+    <span class="group-title">ML Detection Engine (scikit-learn)</span>
+  </div>
+
+  <div class="node t-ml" style="left:20px; top:30px; width:150px;">
+    <span class="title">Random Forest</span>
+    <span class="desc">Primary Classifier<br/>200 Estimators<br/>95.4% Accuracy</span>
+  </div>
+  <div class="node t-ml" style="left:185px; top:30px; width:140px;">
+    <span class="title">SVM (RBF)</span>
+    <span class="desc">Secondary Classifier<br/>Cross-validation<br/>93.2% Accuracy</span>
+  </div>
+  <div class="node t-ml" style="left:340px; top:30px; width:145px;">
+    <span class="title">Isolation Forest</span>
+    <span class="desc">Anomaly Detection<br/>Zero-day Threats<br/>Unsupervised</span>
+  </div>
+
+  <div class="node t-neutral" style="left:130px; top:150px; width:240px;">
+    <span class="title">IDSEngine</span>
+    <span class="desc">Hybrid Prediction Pipeline<br/>Cross-model Validation &amp; Confidence Scoring</span>
+  </div>
+
+  <div class="node t-neutral" style="left:20px; top:265px; width:170px;">
+    <span class="title">StandardScaler</span>
+    <span class="desc">Feature Normalization</span>
+  </div>
+  <div class="node t-neutral" style="left:215px; top:265px; width:265px;">
+    <span class="title">CICIDS2017 Training Data</span>
+    <span class="desc">80,000 samples &bull; 6 attack categories<br/>normal | port_scan | dos | brute_force | anomaly | C2</span>
+  </div>
+
+  <!-- Network Packet Capture -->
+  <div class="group" style="left:530px; top:0; width:380px; height:230px;">
+    <span class="group-title">Network Packet Capture (Scapy)</span>
+  </div>
+
+  <div class="node t-capture" style="left:550px; top:30px; width:160px;">
+    <span class="title">Scapy Sniffer</span>
+    <span class="desc">Live Packet Capture<br/>Interface: en0<br/>All Protocol Layers</span>
+  </div>
+  <div class="node t-capture" style="left:730px; top:30px; width:160px;">
+    <span class="title">Feature Extractor</span>
+    <span class="desc">10-Feature Vector<br/>Protocol Decoding<br/>Real-time Processing</span>
+  </div>
+
+  <div class="node t-neutral" style="left:580px; top:140px; width:280px;">
+    <span class="title">PacketFeatureExtractor</span>
+    <span class="desc">packet_length &bull; ttl &bull; src_port &bull; dst_port &bull; protocol<br/>tcp_flags &bull; IAT &bull; byte_rate &bull; connections &bull; entropy</span>
+  </div>
+
+  <!-- External Services -->
+  <div class="group" style="left:940px; top:0; width:510px; height:320px;">
+    <span class="group-title">External Services &amp; APIs</span>
+  </div>
+
+  <div class="node t-ext" style="left:960px; top:30px; width:220px;">
+    <span class="title">MITRE ATT&CK Framework</span>
+    <span class="desc">Threat Intelligence Mapping<br/>Tactics &bull; Techniques &bull; Mitigations<br/>Interactive Heatmap Data</span>
+  </div>
+  <div class="node t-ext" style="left:1200px; top:30px; width:230px;">
+    <span class="title">GeoIP (MaxMind GeoLite2)</span>
+    <span class="desc">IP Geolocation Lookup<br/>Country &bull; City &bull; Lat/Lng<br/>Redis-cached Results</span>
+  </div>
+  <div class="node t-ext" style="left:960px; top:155px; width:145px;">
+    <span class="title">Ollama LLM</span>
+    <span class="desc">DurianBot Engine<br/>Context-aware Chat<br/>Threat Analysis</span>
+  </div>
+  <div class="node t-ext" style="left:1120px; top:155px; width:145px;">
+    <span class="title">Email (SMTP)</span>
+    <span class="desc">Alert Notifications<br/>Scheduled Reports<br/>Celery Async</span>
+  </div>
+  <div class="node t-ext" style="left:1280px; top:155px; width:150px;">
+    <span class="title">WeasyPrint</span>
+    <span class="desc">PDF Report Gen<br/>HTML Templates<br/>Server-side Render</span>
+  </div>
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!--  ROW 2: NETWORK  |  BACKEND SERVER  |  USER  -->
+  <!-- ════════════════════════════════════════════════ -->
+
+  <!-- Network source -->
+  <div class="node t-capture" style="left:0; top:470px; width:140px;">
+    <span class="icon">&#128225;</span>
+    <span class="title">Network</span>
+    <span class="desc">WiFi / Hotspot<br/>Monitored Interface</span>
+  </div>
+
+  <!-- Backend Server -->
+  <div class="group" style="left:170px; top:420px; width:800px; height:280px;">
+    <span class="group-title">DurianDetector Backend Server (Python / Django)</span>
+  </div>
+
+  <div class="node t-back" style="left:195px; top:455px; width:175px;">
+    <span class="title">Django REST Framework</span>
+    <span class="desc">RESTful API Endpoints<br/>JWT Authentication<br/>Permission Classes</span>
+  </div>
+  <div class="node t-back" style="left:390px; top:455px; width:175px;">
+    <span class="title">Daphne (ASGI)</span>
+    <span class="desc">HTTP + WebSocket Server<br/>Port 8000<br/>Async Request Handling</span>
+  </div>
+  <div class="node t-back" style="left:585px; top:455px; width:175px;">
+    <span class="title">Django Channels</span>
+    <span class="desc">WebSocket Consumer<br/>Real-time Alert Push<br/>Packet Streaming</span>
+  </div>
+  <div class="node t-back" style="left:780px; top:455px; width:175px;">
+    <span class="title">Celery + Redis</span>
+    <span class="desc">Async Task Workers<br/>Capture &bull; Training &bull; Reports<br/>Email Dispatch</span>
+  </div>
+
+  <div class="node t-neutral" style="left:195px; top:575px; width:175px;">
+    <span class="title">Alert Engine</span>
+    <span class="desc">Threat Classification<br/>Severity &bull; MITRE Mapping<br/>GeoIP Enrichment</span>
+  </div>
+  <div class="node t-neutral" style="left:390px; top:575px; width:175px;">
+    <span class="title">Subscription Manager</span>
+    <span class="desc">Free / Premium / Exclusive<br/>Feature Gating<br/>Tier Database Router</span>
+  </div>
+  <div class="node t-neutral" style="left:585px; top:575px; width:175px;">
+    <span class="title">Incident Manager</span>
+    <span class="desc">Case Tracking<br/>Attack Chain Analysis<br/>Team Collaboration</span>
+  </div>
+  <div class="node t-neutral" style="left:780px; top:575px; width:175px;">
+    <span class="title">Admin &amp; Audit</span>
+    <span class="desc">User Management<br/>System Health Monitor<br/>Immutable Audit Logs</span>
+  </div>
+
+  <!-- User -->
+  <div class="node t-neutral" style="left:1010px; top:490px; width:140px;">
+    <span class="icon">&#128100;</span>
+    <span class="title">Security Analyst</span>
+    <span class="desc">Enter Inputs<br/>View Outputs</span>
+  </div>
+  <div class="node t-neutral" style="left:1180px; top:490px; width:140px;">
+    <span class="icon">&#128187;</span>
+    <span class="title">Web Browser</span>
+    <span class="desc">HTTP + WebSocket<br/>React SPA</span>
+  </div>
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!--  ROW 3: DATA LAYER  |  FRONTEND  -->
+  <!-- ════════════════════════════════════════════════ -->
+
+  <!-- Data Layer -->
+  <div class="group" style="left:0; top:760px; width:500px; height:480px;">
+    <span class="group-title">Data Layer</span>
+  </div>
+
+  <div class="node t-data" style="left:20px; top:795px; width:220px;">
+    <span class="title">PostgreSQL</span>
+    <span class="desc">4 Isolated Databases:<br/><b>default</b> &bull; <b>free_db</b><br/><b>premium_db</b> &bull; <b>exclusive_db</b></span>
+  </div>
+  <div class="node t-data" style="left:260px; top:795px; width:220px;">
+    <span class="title">Redis</span>
+    <span class="desc">In-Memory Cache Layer<br/>Celery Message Broker<br/>Django Channels Layer<br/>GeoIP Result Cache</span>
+  </div>
+
+  <div class="node t-neutral" style="left:20px; top:920px; width:220px;">
+    <span class="title">Django ORM</span>
+    <span class="desc">TierDatabaseRouter<br/>Multi-DB Data Isolation<br/>Queryset Filtering</span>
+  </div>
+  <div class="node t-neutral" style="left:260px; top:920px; width:220px;">
+    <span class="title">ML Model Storage</span>
+    <span class="desc">ml_models/*.joblib<br/>Random Forest &bull; SVM<br/>Isolation Forest &bull; Scaler</span>
+  </div>
+
+  <div class="node t-neutral" style="left:20px; top:1040px; width:220px;">
+    <span class="title">Core Models</span>
+    <span class="desc">Alert &bull; Incident &bull; Report<br/>BlockedIP &bull; Whitelist<br/>TrafficFilter &bull; AuditLog</span>
+  </div>
+  <div class="node t-neutral" style="left:260px; top:1040px; width:220px;">
+    <span class="title">Capture Models</span>
+    <span class="desc">CaptureSession &bull; NetworkFeature<br/>MLModelConfig &bull; MLMetrics<br/>Environment &bull; Membership</span>
+  </div>
+
+  <!-- Frontend -->
+  <div class="group" style="left:530px; top:760px; width:920px; height:480px;">
+    <span class="group-title">DurianDetector Frontend (React 18 + Vite + TailwindCSS)</span>
+  </div>
+
+  <div class="node t-front" style="left:555px; top:795px; width:185px;">
+    <span class="title">SOC Dashboard</span>
+    <span class="desc">Real-time Metrics<br/>Risk Gauge &bull; Live Feed<br/>Severity Breakdown</span>
+  </div>
+  <div class="node t-front" style="left:760px; top:795px; width:185px;">
+    <span class="title">Alert Management</span>
+    <span class="desc">Filter &bull; Block &bull; Triage<br/>Toast Notifications<br/>Acknowledge / Dismiss</span>
+  </div>
+  <div class="node t-front" style="left:965px; top:795px; width:185px;">
+    <span class="title">GeoIP Visualisation</span>
+    <span class="desc">2D Leaflet Map<br/>3D react-globe.gl<br/>Severity-coded Arcs</span>
+  </div>
+  <div class="node t-front" style="left:1170px; top:795px; width:185px;">
+    <span class="title">MITRE ATT&CK</span>
+    <span class="desc">Interactive Heatmap<br/>Technique Details<br/>Tactic Categories</span>
+  </div>
+
+  <div class="node t-front" style="left:555px; top:920px; width:185px;">
+    <span class="title">ML Configuration</span>
+    <span class="desc">Model Selection<br/>Sensitivity Tuning<br/>Performance Metrics</span>
+  </div>
+  <div class="node t-front" style="left:760px; top:920px; width:185px;">
+    <span class="title">DurianBot Chat</span>
+    <span class="desc">Tiered AI Chatbot<br/>ATT&CK-aware (Premium)<br/>LLM-powered (Exclusive)</span>
+  </div>
+  <div class="node t-front" style="left:965px; top:920px; width:185px;">
+    <span class="title">Incident &amp; Reports</span>
+    <span class="desc">PDF / CSV Export<br/>Attack Chain Timeline<br/>Scheduled Reports</span>
+  </div>
+  <div class="node t-front" style="left:1170px; top:920px; width:185px;">
+    <span class="title">Packet Inspector</span>
+    <span class="desc">Live Packet Stream<br/>Protocol Filters<br/>Deep Packet View</span>
+  </div>
+
+  <div class="node t-front" style="left:555px; top:1040px; width:185px;">
+    <span class="title">Admin Panel</span>
+    <span class="desc">User Management<br/>Audit Logs<br/>System Health</span>
+  </div>
+  <div class="node t-front" style="left:760px; top:1040px; width:185px;">
+    <span class="title">Team Management</span>
+    <span class="desc">Invite Members<br/>Role Assignment<br/>API Key Generation</span>
+  </div>
+  <div class="node t-front" style="left:965px; top:1040px; width:185px;">
+    <span class="title">Subscription</span>
+    <span class="desc">Plan Comparison<br/>Upgrade / Downgrade<br/>Feature Gating</span>
+  </div>
+  <div class="node t-front" style="left:1170px; top:1040px; width:185px;">
+    <span class="title">Traffic &amp; Block Rules</span>
+    <span class="desc">Traffic Filters<br/>Block List &bull; Whitelist<br/>Log Ingestion</span>
+  </div>
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!--  SVG ARROWS (orthogonal / 90° turns only)     -->
+  <!-- ════════════════════════════════════════════════ -->
+  <svg class="arrows" viewBox="0 0 1500 1300">
+    <defs>
+      <marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <path d="M0,0.5 L7,3 L0,5.5" fill="none" stroke="#777" stroke-width="1"/>
+      </marker>
+      <marker id="ah-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <path d="M0,0.5 L7,3 L0,5.5" fill="none" stroke="#1565c0" stroke-width="1.2"/>
+      </marker>
+      <marker id="ah-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <path d="M0,0.5 L7,3 L0,5.5" fill="none" stroke="#2e7d32" stroke-width="1.2"/>
+      </marker>
+      <marker id="ah-red" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <path d="M0,0.5 L7,3 L0,5.5" fill="none" stroke="#c62828" stroke-width="1.2"/>
+      </marker>
+      <marker id="ah-purple" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <path d="M0,0.5 L7,3 L0,5.5" fill="none" stroke="#7b1fa2" stroke-width="1.2"/>
+      </marker>
+      <marker id="ah-orange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <path d="M0,0.5 L7,3 L0,5.5" fill="none" stroke="#bf6000" stroke-width="1.2"/>
+      </marker>
+    </defs>
+
+    <!-- 1. Network → Scapy Sniffer (up through gap, right, up, right) -->
+    <path d="M 70,470 V 393 H 520 V 75 H 550" stroke="#2e7d32" stroke-width="1.5" stroke-dasharray="6,4" fill="none" marker-end="url(#ah-green)"/>
+
+    <!-- 2. Scapy → Feature Extractor (straight right) -->
+    <path d="M 710,75 H 730" stroke="#2e7d32" stroke-width="1.5" fill="none" marker-end="url(#ah-green)"/>
+
+    <!-- 3. Feature Extractor → PacketFeatureExtractor (down, left, down) -->
+    <path d="M 810,120 V 130 H 720 V 140" stroke="#777" stroke-width="1.2" fill="none" marker-end="url(#ah)"/>
+
+    <!-- 4. PacketFeatureExtractor → IDSEngine (straight left) -->
+    <path d="M 580,180 H 370" stroke="#777" stroke-width="1.2" fill="none" marker-end="url(#ah)"/>
+
+    <!-- 5. IDSEngine → Random Forest (up, left, up) -->
+    <path d="M 180,150 V 125 H 95 V 120" stroke="#bf6000" stroke-width="1.2" fill="none" marker-end="url(#ah-orange)"/>
+
+    <!-- 6. IDSEngine → SVM (straight up) -->
+    <path d="M 253,150 V 120" stroke="#bf6000" stroke-width="1.2" fill="none" marker-end="url(#ah-orange)"/>
+
+    <!-- 7. IDSEngine → Isolation Forest (up, right, up) -->
+    <path d="M 320,150 V 125 H 412 V 120" stroke="#bf6000" stroke-width="1.2" fill="none" marker-end="url(#ah-orange)"/>
+
+    <!-- 8. ML Engine → Backend (straight down) -->
+    <path d="M 250,370 V 455" stroke="#777" stroke-width="1.2" stroke-dasharray="5,3" fill="none" marker-end="url(#ah)"/>
+
+    <!-- 9. Backend → ML Engine (straight up) -->
+    <path d="M 270,455 V 370" stroke="#777" stroke-width="1.2" stroke-dasharray="5,3" fill="none" marker-end="url(#ah)"/>
+
+    <!-- 10. Backend → PostgreSQL (down, left, down) -->
+    <path d="M 300,700 V 730 H 130 V 795" stroke="#c62828" stroke-width="1.5" fill="none" marker-end="url(#ah-red)"/>
+
+    <!-- 11. Backend → Redis (down, left, down) -->
+    <path d="M 450,700 V 748 H 370 V 795" stroke="#c62828" stroke-width="1.5" fill="none" marker-end="url(#ah-red)"/>
+
+    <!-- 12. Backend → Frontend — API Request (straight down) -->
+    <path d="M 590,700 V 795" stroke="#777" stroke-width="1.2" fill="none" marker-end="url(#ah)"/>
+
+    <!-- 13. Frontend → Backend — API Response (straight up) -->
+    <path d="M 640,795 V 700" stroke="#777" stroke-width="1.2" fill="none" marker-end="url(#ah)"/>
+
+    <!-- 14. Django Channels → Frontend — WebSocket (right, down) -->
+    <path d="M 760,490 H 980 V 795" stroke="#1565c0" stroke-width="1.8" stroke-dasharray="8,4" fill="none" marker-end="url(#ah-blue)"/>
+
+    <!-- 15. Backend → MITRE ATT&CK (up, right, up) -->
+    <path d="M 867,455 V 388 H 1070 V 120" stroke="#7b1fa2" stroke-width="1.2" stroke-dasharray="5,3" fill="none" marker-end="url(#ah-purple)"/>
+
+    <!-- 16. Backend → Ollama / Email (up, right, up) -->
+    <path d="M 900,455 V 378 H 1192 V 245" stroke="#7b1fa2" stroke-width="1.2" stroke-dasharray="5,3" fill="none" marker-end="url(#ah-purple)"/>
+
+    <!-- 17. Security Analyst → Web Browser (straight right) -->
+    <path d="M 1150,540 H 1180" stroke="#777" stroke-width="1.2" fill="none" marker-end="url(#ah)"/>
+
+    <!-- 18. Web Browser → Frontend (straight down) -->
+    <path d="M 1250,590 V 795" stroke="#777" stroke-width="1.2" fill="none" marker-end="url(#ah)"/>
+
+    <!-- 19. Network → Backend (straight right) -->
+    <path d="M 140,510 H 195" stroke="#2e7d32" stroke-width="1.5" stroke-dasharray="6,4" fill="none" marker-end="url(#ah-green)"/>
+  </svg>
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!--  LABELS                                         -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div class="lbl" style="left:310px; top:378px; color:#2e7d32;">Live Packets</div>
+  <div class="lbl" style="left:195px; top:435px; color:#777;">ML Inference</div>
+  <div class="lbl" style="left:440px; top:168px; color:#777;">Feature Vector</div>
+  <div class="lbl" style="left:160px; top:718px; color:#c62828;">CRUD / Queries</div>
+  <div class="lbl" style="left:400px; top:733px; color:#c62828;">Cache / Broker</div>
+  <div class="lbl" style="left:548px; top:740px; color:#777;">API Request</div>
+  <div class="lbl" style="left:645px; top:740px; color:#777;">API Response</div>
+  <div class="lbl" style="left:988px; top:620px; color:#1565c0;">WebSocket Push</div>
+  <div class="lbl" style="left:930px; top:365px; color:#7b1fa2;">Fetch External APIs</div>
+  <div class="lbl" style="left:1160px; top:640px; color:#777;">Inputs / Outputs</div>
+
+</div>
+</body>
+</html>
