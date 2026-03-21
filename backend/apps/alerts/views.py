@@ -91,6 +91,10 @@ class GeoIPDataView(APIView):
     """
     Get GeoIP data for map visualization — US-11.
     Returns alerts with lat/lng grouped by country.
+
+    Automatically backfills missing geo data on the first request so
+    that alerts created before the GeoIP fallback was added still
+    appear on the 3D globe.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -99,6 +103,11 @@ class GeoIPDataView(APIView):
         env = _get_user_environment(request.user)
         if not env:
             return Response({'error': 'No environment found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ── Backfill missing geo data on-demand ──
+        # Alerts that have a public src_ip but no lat/lng get a retroactive
+        # lookup so they appear on the globe without re-running capture.
+        self._backfill_geo(env)
 
         # Alerts with geo data (limited to 500 most recent for performance)
         alerts = Alert.objects.filter(
@@ -122,6 +131,29 @@ class GeoIPDataView(APIView):
             'country_stats': list(country_stats),
             'total_with_geo': alerts.count(),
         })
+
+    @staticmethod
+    def _backfill_geo(env):
+        """
+        Retroactively resolve geo coordinates for alerts missing lat/lng.
+        Limited to the 200 most recent to avoid long request times.
+        """
+        from apps.alerts.geoip import lookup_ip
+
+        missing = Alert.objects.filter(
+            environment=env,
+            latitude__isnull=True,
+        ).order_by('-timestamp')[:200]
+
+        for alert in missing:
+            geo = lookup_ip(alert.src_ip)
+            if geo and geo.get('latitude') is not None:
+                Alert.objects.filter(pk=alert.pk).update(
+                    latitude=geo['latitude'],
+                    longitude=geo['longitude'],
+                    country=geo.get('country', '') or alert.country or '',
+                    city=geo.get('city', '') or alert.city or '',
+                )
 
 
 class BlockIPView(APIView):
@@ -226,32 +258,34 @@ class DashboardStatsView(APIView):
         alerts = Alert.objects.filter(environment=env)
         recent_alerts = alerts.filter(timestamp__gte=twenty_four_hours_ago)
 
-        # Severity breakdown (last 24h)
-        severity_counts = {}
-        for sev in ['low', 'medium', 'high', 'critical']:
-            severity_counts[sev] = recent_alerts.filter(severity=sev).count()
+        # Severity breakdown (last 24h) — single query
+        severity_qs = recent_alerts.values('severity').annotate(count=Count('id'))
+        severity_counts = {sev: 0 for sev in ['low', 'medium', 'high', 'critical']}
+        for row in severity_qs:
+            if row['severity'] in severity_counts:
+                severity_counts[row['severity']] = row['count']
 
-        # Alert type breakdown
-        type_counts = {}
-        for atype in alerts.values_list('alert_type', flat=True).distinct():
-            type_counts[atype] = recent_alerts.filter(alert_type=atype).count()
+        # Alert type breakdown — single query
+        type_qs = recent_alerts.values('alert_type').annotate(count=Count('id'))
+        type_counts = {row['alert_type']: row['count'] for row in type_qs}
 
-        # Hourly trend (last 24h)
+        # Hourly trend (last 24h) — single query using TruncHour
+        from django.db.models.functions import TruncHour
+        hourly_qs = alerts.filter(
+            timestamp__gte=twenty_four_hours_ago
+        ).annotate(
+            hour=TruncHour('timestamp')
+        ).values('hour').annotate(count=Count('id')).order_by('hour')
+        hourly_map = {row['hour'].strftime('%H:%M'): row['count'] for row in hourly_qs}
         hourly_trend = []
         for i in range(24):
             hour_start = now - timedelta(hours=i + 1)
-            hour_end = now - timedelta(hours=i)
-            count = alerts.filter(timestamp__gte=hour_start, timestamp__lt=hour_end).count()
-            hourly_trend.append({
-                'hour': hour_start.strftime('%H:%M'),
-                'count': count,
-            })
+            key = hour_start.strftime('%H:%M')
+            hourly_trend.append({'hour': key, 'count': hourly_map.get(key, 0)})
         hourly_trend.reverse()
 
         # Top source IPs
-        top_ips = alerts.filter(
-            timestamp__gte=twenty_four_hours_ago
-        ).values('src_ip').annotate(
+        top_ips = recent_alerts.values('src_ip').annotate(
             count=Count('id')
         ).order_by('-count')[:10]
 

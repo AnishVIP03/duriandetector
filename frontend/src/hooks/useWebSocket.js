@@ -18,6 +18,10 @@ export function useWebSocket(path, { onMessage, autoConnect = true } = {}) {
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
   const intentionalCloseRef = useRef(false);
+  // Store onMessage in a ref so it can be read inside the WS handler
+  // without causing connect() to be recreated on every render.
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -37,10 +41,14 @@ export function useWebSocket(path, { onMessage, autoConnect = true } = {}) {
     };
 
     ws.onmessage = (event) => {
+      // Guard: do not process messages if the user has logged out
+      const currentTokens = useAuthStore.getState().tokens;
+      if (!currentTokens?.access) return;
+
       try {
         const data = JSON.parse(event.data);
         setLastMessage(data);
-        onMessage?.(data);
+        onMessageRef.current?.(data);
       } catch (e) {
         console.error('WebSocket message parse error:', e);
       }
@@ -49,6 +57,9 @@ export function useWebSocket(path, { onMessage, autoConnect = true } = {}) {
     ws.onclose = () => {
       setIsConnected(false);
       if (intentionalCloseRef.current) return;
+      // Do not reconnect if the user has logged out
+      const currentTokens = useAuthStore.getState().tokens;
+      if (!currentTokens?.access) return;
       if (autoConnect && reconnectAttemptRef.current < MAX_RECONNECT_ATTEMPTS) {
         const attempt = reconnectAttemptRef.current;
         const delay = Math.min(3000 * Math.pow(2, attempt), 30000);
@@ -63,12 +74,13 @@ export function useWebSocket(path, { onMessage, autoConnect = true } = {}) {
     ws.onerror = () => {};
 
     wsRef.current = ws;
-  }, [path, tokens?.access, onMessage, autoConnect]);
+  }, [path, tokens?.access, autoConnect]);
 
   const disconnect = useCallback(() => {
     intentionalCloseRef.current = true;
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     if (wsRef.current) {
       wsRef.current.close();
@@ -84,10 +96,14 @@ export function useWebSocket(path, { onMessage, autoConnect = true } = {}) {
     }
   }, []);
 
-  // Connect when autoConnect is true and token is available
+  // Connect when autoConnect is true and token is available;
+  // disconnect immediately when token is cleared (logout).
   useEffect(() => {
     if (autoConnect && tokens?.access) {
       connect();
+    } else {
+      // Token was removed (logout) — tear down any active connection
+      disconnect();
     }
     return () => disconnect();
   }, [autoConnect, tokens?.access, connect, disconnect]);

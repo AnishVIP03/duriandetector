@@ -160,6 +160,8 @@ export default function PacketInspectorPage() {
     autoConnect: false,
   });
 
+  const [simulating, setSimulating] = useState(false);
+
   const handleStartCapture = async () => {
     try {
       await captureAPI.start({ duration: 300 });
@@ -167,18 +169,49 @@ export default function PacketInspectorPage() {
       setCapturing(true);
       toast.success('Packet capture started');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to start capture');
+      // If real capture fails (Celery not running, permissions, etc.),
+      // fall back to simulation mode automatically.
+      try {
+        await captureAPI.simulate({ duration: 120, rate: 5 });
+        connect();
+        setCapturing(true);
+        setSimulating(true);
+        toast.success('Packet simulation started (demo mode)');
+      } catch (simErr) {
+        toast.error(simErr.response?.data?.error || 'Failed to start capture');
+      }
     }
   };
 
   const handleStopCapture = async () => {
     try {
-      await captureAPI.stop();
+      if (simulating) {
+        await captureAPI.stopSimulate();
+      } else {
+        await captureAPI.stop();
+      }
       disconnect();
       setCapturing(false);
+      setSimulating(false);
       toast.success('Capture stopped');
     } catch {
+      // Force-disconnect even if the stop request fails
+      disconnect();
+      setCapturing(false);
+      setSimulating(false);
       toast.error('Failed to stop capture');
+    }
+  };
+
+  const handleStartSimulation = async () => {
+    try {
+      await captureAPI.simulate({ duration: 120, rate: 5 });
+      connect();
+      setCapturing(true);
+      setSimulating(true);
+      toast.success('Packet simulation started');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to start simulation');
     }
   };
 
@@ -219,12 +252,17 @@ export default function PacketInspectorPage() {
         <div className="flex items-center gap-2">
           {capturing ? (
             <button onClick={handleStopCapture} className="soc-btn-danger !py-2 flex items-center gap-2">
-              <Square className="w-4 h-4" /> Stop Capture
+              <Square className="w-4 h-4" /> {simulating ? 'Stop Simulation' : 'Stop Capture'}
             </button>
           ) : (
-            <button onClick={handleStartCapture} className="soc-btn-primary !py-2 flex items-center gap-2">
-              <Play className="w-4 h-4" /> Start Capture
-            </button>
+            <>
+              <button onClick={handleStartCapture} className="soc-btn-primary !py-2 flex items-center gap-2">
+                <Play className="w-4 h-4" /> Start Capture
+              </button>
+              <button onClick={handleStartSimulation} className="soc-btn-ghost !py-2 flex items-center gap-2 border-soc-accent text-soc-accent">
+                <Wifi className="w-4 h-4" /> Simulate
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -234,7 +272,7 @@ export default function PacketInspectorPage() {
         <div className="flex items-center gap-2">
           <div className={`status-dot ${isConnected ? 'status-dot-active' : 'bg-soc-muted'}`} />
           <span className="text-xs text-soc-muted uppercase tracking-wider font-semibold">
-            {isConnected ? 'Connected' : 'Disconnected'}
+            {isConnected ? (simulating ? 'Simulating' : 'Connected') : 'Disconnected'}
           </span>
         </div>
         <div className="flex items-center gap-2 text-sm text-soc-muted">

@@ -122,11 +122,24 @@ export default function GeoIPMapPage() {
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
         />
-        {MapComponent && geoData ? (
+        {MapComponent && geoData && geoData.alerts && geoData.alerts.length > 0 ? (
           <MapComponent alerts={geoData.alerts} />
         ) : (
-          <div className="h-[500px] flex items-center justify-center text-soc-muted">
-            {loading ? 'Loading map data...' : 'No geographic data available'}
+          <div className="h-[500px] flex flex-col items-center justify-center text-soc-muted gap-3">
+            {loading ? (
+              <>
+                <RefreshCw className="w-6 h-6 animate-spin" />
+                <span>Loading map data...</span>
+              </>
+            ) : (
+              <>
+                <MapPin className="w-10 h-10 text-soc-muted/40" />
+                <span className="text-base font-medium">No geographic data available</span>
+                <span className="text-sm text-soc-muted/70 max-w-sm text-center">
+                  Run a demo simulation or start a packet capture to generate alerts with geolocation data.
+                </span>
+              </>
+            )}
           </div>
         )}
       </div>

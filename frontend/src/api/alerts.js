@@ -36,6 +36,8 @@ export const captureAPI = {
   start: (data = {}) => client.post('/capture/start/', data),
   stop: () => client.post('/capture/stop/'),
   getStatus: () => client.get('/capture/status/'),
+  simulate: (data = {}) => client.post('/capture/simulate/', data),
+  stopSimulate: () => client.post('/capture/simulate/stop/'),
 };
 
 export const threatsAPI = {

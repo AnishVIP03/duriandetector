@@ -38,8 +38,9 @@ export default function ThreatsPage() {
     try {
       const { data } = await threatsAPI.getAll();
       setThreats(data.results || data);
-    } catch {
-      console.error('Failed to fetch threats');
+    } catch (err) {
+      console.error('Failed to fetch threats:', err);
+      toast.error('Failed to load threat intelligence data');
     } finally {
       setLoading(false);
     }

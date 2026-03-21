@@ -344,8 +344,11 @@ export default function AttackChainPage() {
     try {
       const { data } = await attackChainsAPI.getAll();
       setChains(data.results || data);
-    } catch {
-      // API may not be available yet
+    } catch (err) {
+      console.error('Failed to fetch attack chains:', err);
+      if (err.response?.status === 403) {
+        toast.error('Upgrade your subscription to access Attack Chains.');
+      }
     } finally {
       setLoading(false);
     }
@@ -356,8 +359,8 @@ export default function AttackChainPage() {
     try {
       const { data } = await attackChainsAPI.getRiskScore();
       setRiskData({ score: data.score, factors: data.factors });
-    } catch {
-      // API may not be available yet
+    } catch (err) {
+      console.error('Failed to fetch risk score:', err);
     } finally {
       setRiskLoading(false);
     }

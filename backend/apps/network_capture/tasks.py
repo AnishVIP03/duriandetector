@@ -62,26 +62,9 @@ def _get_mitre_mapping(alert_type):
 
 
 def _lookup_geoip(ip_address):
-    """Look up GeoIP data for an IP address."""
-    try:
-        import geoip2.database
-        from django.conf import settings
-        import os
-
-        db_path = os.path.join(settings.GEOIP_PATH, 'GeoLite2-City.mmdb')
-        if not os.path.exists(db_path):
-            return {}
-
-        with geoip2.database.Reader(db_path) as reader:
-            response = reader.city(ip_address)
-            return {
-                'latitude': response.location.latitude,
-                'longitude': response.location.longitude,
-                'country': response.country.name or '',
-                'city': response.city.name or '',
-            }
-    except Exception:
-        return {}
+    """Look up GeoIP data for an IP address using the shared geoip module."""
+    from apps.alerts.geoip import lookup_ip
+    return lookup_ip(ip_address)
 
 
 @shared_task(bind=True)

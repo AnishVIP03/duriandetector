@@ -1,15 +1,30 @@
 """
 Views for network_capture app — US-21, packet capture management.
 """
+import random
+import threading
+import time
+import logging
+
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 from .models import CaptureSession
 from .serializers import CaptureSessionSerializer, StartCaptureSerializer
 from apps.environments.models import EnvironmentMembership
 from apps.accounts.permissions import SubscriptionRequired
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# In-memory registry of running simulation threads (keyed by user id)
+# ---------------------------------------------------------------------------
+_simulation_threads = {}
+_simulation_lock = threading.Lock()
 
 
 class StartCaptureView(APIView):
@@ -145,3 +160,153 @@ class CaptureStatusView(APIView):
             'is_capturing': current is not None,
             'recent_sessions': CaptureSessionSerializer(sessions, many=True).data,
         })
+
+
+# ---------------------------------------------------------------------------
+# Packet simulation data (mirrors demo app style)
+# ---------------------------------------------------------------------------
+
+_SIM_SOURCE_IPS = [
+    '185.220.101.42', '103.253.41.98', '45.155.205.233',
+    '91.240.118.172', '198.51.100.23', '203.0.113.45',
+    '177.54.150.100', '10.0.1.55', '192.168.1.10',
+    '172.16.0.22', '59.24.3.174', '78.128.113.18',
+]
+
+_SIM_DST_IPS = [
+    '10.0.1.10', '10.0.1.20', '10.0.1.30', '10.0.2.10',
+    '192.168.1.100', '192.168.1.200', '172.16.0.5',
+]
+
+_SIM_PROTOCOLS = ['TCP', 'UDP', 'ICMP', 'HTTP', 'DNS', 'SSH']
+
+_SIM_FLAGS = ['SYN', 'SYN-ACK', 'ACK', 'FIN', 'RST', 'PSH-ACK', 'URG', '']
+
+
+def _generate_simulated_packet():
+    """Generate a single realistic-looking simulated packet dict."""
+    protocol = random.choice(_SIM_PROTOCOLS)
+    src_port = random.randint(1024, 65535) if protocol != 'ICMP' else None
+    dst_port_map = {
+        'HTTP': [80, 443, 8080],
+        'DNS': [53],
+        'SSH': [22],
+        'TCP': [80, 443, 22, 3306, 5432, 8080, 8443],
+        'UDP': [53, 123, 161, 5060],
+        'ICMP': [None],
+    }
+    dst_port = random.choice(dst_port_map.get(protocol, [80]))
+
+    return {
+        'src_ip': random.choice(_SIM_SOURCE_IPS),
+        'dst_ip': random.choice(_SIM_DST_IPS),
+        'src_port': src_port,
+        'dst_port': dst_port,
+        'protocol': protocol,
+        'length': random.randint(40, 1500),
+        'flags': random.choice(_SIM_FLAGS) if protocol in ('TCP', 'HTTP') else '',
+        'ttl': random.choice([32, 64, 128, 255]),
+        'window_size': random.randint(1024, 65535) if protocol == 'TCP' else None,
+        'checksum': f'0x{random.randint(0, 0xFFFF):04x}',
+        'seq_num': random.randint(0, 0xFFFFFFFF) if protocol == 'TCP' else None,
+        'ack_num': random.randint(0, 0xFFFFFFFF) if protocol == 'TCP' else None,
+        'timestamp': timezone.now().isoformat(),
+    }
+
+
+def _simulation_worker(user_id, duration, rate):
+    """
+    Background thread that pushes simulated packets to the WebSocket
+    channel layer at approximately *rate* packets per second.
+    """
+    channel_layer = get_channel_layer()
+    end_time = time.time() + duration
+    interval = 1.0 / max(rate, 1)
+
+    logger.info(f"Packet simulation started for user {user_id}: "
+                f"duration={duration}s, rate={rate} pkt/s")
+
+    while time.time() < end_time:
+        # Check if we've been asked to stop
+        with _simulation_lock:
+            entry = _simulation_threads.get(user_id)
+            if entry is None or entry.get('stop'):
+                break
+
+        pkt = _generate_simulated_packet()
+        try:
+            async_to_sync(channel_layer.group_send)('packets', {
+                'type': 'packet_message',
+                'data': pkt,
+            })
+        except Exception as e:
+            logger.warning(f"Simulation broadcast error: {e}")
+
+        time.sleep(interval + random.uniform(-interval * 0.2, interval * 0.2))
+
+    # Clean up
+    with _simulation_lock:
+        _simulation_threads.pop(user_id, None)
+
+    logger.info(f"Packet simulation ended for user {user_id}")
+
+
+class SimulatePacketsView(APIView):
+    """
+    Start a simulated packet stream for the Packet Inspector.
+
+    Launches a background thread that generates realistic fake packets
+    and broadcasts them via the 'packets' WebSocket group, so the
+    Packet Inspector page can display them without needing Scapy,
+    Celery, or root privileges.
+
+    POST body (all optional):
+        duration: seconds to run (default 120, max 300)
+        rate: packets per second (default 5, max 50)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user_id = request.user.id
+        duration = min(int(request.data.get('duration', 120)), 300)
+        rate = min(int(request.data.get('rate', 5)), 50)
+
+        with _simulation_lock:
+            if user_id in _simulation_threads:
+                return Response(
+                    {'error': 'A packet simulation is already running.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            thread = threading.Thread(
+                target=_simulation_worker,
+                args=(user_id, duration, rate),
+                daemon=True,
+            )
+            _simulation_threads[user_id] = {'thread': thread, 'stop': False}
+            thread.start()
+
+        return Response({
+            'message': 'Packet simulation started.',
+            'duration': duration,
+            'rate': rate,
+        }, status=status.HTTP_201_CREATED)
+
+
+class StopSimulatePacketsView(APIView):
+    """Stop a running packet simulation."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user_id = request.user.id
+
+        with _simulation_lock:
+            entry = _simulation_threads.get(user_id)
+            if not entry:
+                return Response(
+                    {'error': 'No packet simulation is running.'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            entry['stop'] = True
+
+        return Response({'message': 'Packet simulation stopping.'})

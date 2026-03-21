@@ -66,6 +66,9 @@ export default function MainLayout() {
     } catch {
       // Ignore errors
     }
+    // Dismiss all active toasts before logging out so no stale
+    // WebSocket-driven notifications linger on the login screen.
+    toast.dismiss();
     logout();
     toast.success('Logged out successfully');
     navigate('/');

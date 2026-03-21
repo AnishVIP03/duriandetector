@@ -17,10 +17,12 @@ BACKEND_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
 
 echo -e "${BLUE}${BOLD}"
-echo "  ╔══════════════════════════════════════════╗"
-echo "  ║       🛡️  DurianDetector IDS  🛡️          ║"
-echo "  ║       FYP-26-S1-08 Startup Script        ║"
-echo "  ╚══════════════════════════════════════════╝"
+echo "  ╔══════════════════════════════════════╗"
+echo "  ║                                      ║"
+echo "  ║      DurianDetector IDS  [v1.0]      ║"
+echo "  ║      FYP-26-S1-08 Startup Script     ║"
+echo "  ║                                      ║"
+echo "  ╚══════════════════════════════════════╝"
 echo -e "${NC}"
 
 # Cleanup function — kill all child processes on exit
@@ -75,17 +77,27 @@ if ! $PYTHON -c "import django" 2>/dev/null; then
 fi
 echo -e "  ✓ Backend dependencies ready"
 
-# ─── Run migrations (with timeout to prevent hanging) ───
+# ─── Run migrations ───
 echo -e "${BLUE}[4/6]${NC} Running database migrations..."
 cd "$BACKEND_DIR"
-MIGRATE_OK=true
+MIGRATE_FAIL=0
 for DB in default free_db premium_db exclusive_db; do
-    timeout 15 $PYTHON manage.py migrate --database=$DB -v 0 2>/dev/null || MIGRATE_OK=false
+    timeout 30 $PYTHON manage.py migrate --database=$DB -v 0 2>/dev/null
+    if [ $? -eq 0 ]; then
+        echo -e "  ✓ $DB migrated"
+    else
+        # Check if DB is simply already up to date
+        STATUS=$(timeout 10 $PYTHON manage.py showmigrations --database=$DB 2>/dev/null | grep -c "\[ \]")
+        if [ "$STATUS" = "0" ] 2>/dev/null; then
+            echo -e "  ✓ $DB already up to date"
+        else
+            echo -e "  ${YELLOW}⚠ $DB had issues (${STATUS} pending)${NC}"
+            MIGRATE_FAIL=$((MIGRATE_FAIL + 1))
+        fi
+    fi
 done
-if [ "$MIGRATE_OK" = true ]; then
-    echo -e "  ✓ All databases ready"
-else
-    echo -e "  ${YELLOW}Some migrations had issues (databases may already be up to date — skipping)${NC}"
+if [ "$MIGRATE_FAIL" -eq 0 ]; then
+    echo -e "  ${GREEN}✓ All databases ready${NC}"
 fi
 
 # ─── Install frontend deps if needed ───
@@ -169,6 +181,7 @@ echo -e "  ${GREEN}✓${NC} Frontend → ${BOLD}http://localhost:5173${NC}   (PI
 cd "$BACKEND_DIR"
 $PYTHON manage.py setup_admin 2>/dev/null
 $PYTHON manage.py seed_mitre > /dev/null 2>&1 &
+$PYTHON manage.py seed_threats > /dev/null 2>&1 &
 
 # ─── Auto-start capture after Django is ready ───
 IFACE="en0"
@@ -191,7 +204,7 @@ if [ "$(uname)" != "Darwin" ]; then IFACE="eth0"; fi
             -d "{\"interface\":\"$IFACE\"}" > /dev/null 2>&1
     fi
 ) &
-echo -e "  ${GREEN}✓${NC} Background setup (MITRE, environment, auto-capture)..."
+echo -e "  ${GREEN}✓${NC} Background setup (MITRE, threats, environment, auto-capture)..."
 
 echo ""
 echo -e "${GREEN}${BOLD}═══════════════════════════════════════════════${NC}"
