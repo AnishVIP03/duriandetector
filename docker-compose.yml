@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # Redis — used by Celery broker and Django Channels
   redis:
     image: redis:7-alpine
     ports:
@@ -9,17 +8,33 @@ services:
     volumes:
       - redis_data:/data
 
-  # PostgreSQL — production database
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ids_db
-      POSTGRES_USER: ids_user
-      POSTGRES_PASSWORD: ids_password
+      POSTGRES_DB: duriandetector_free
+      POSTGRES_USER: demo_user
+      POSTGRES_PASSWORD: demo_password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c max_connections=200
+
+  postgres_init:
+    image: postgres:16-alpine
+    depends_on:
+      - postgres
+    environment:
+      PGPASSWORD: demo_password
+    restart: "no"
+    command: >
+      sh -c "
+        sleep 5 &&
+        psql -h postgres -U demo_user -d duriandetector_free -c 'CREATE DATABASE duriandetector_premium;' || true &&
+        psql -h postgres -U demo_user -d duriandetector_free -c 'CREATE DATABASE duriandetector_exclusive;' || true
+      "
 
 volumes:
   redis_data:
